@@ -677,3 +677,108 @@ export const BASKET_TOKEN_ABI = [
     outputs: [{ name: "", type: "bool" }],
   },
 ] as const;
+
+// ─── FHE Stop-Loss ABI (Fhenix CoFHE on Arbitrum Sepolia) ──────────────────
+export const FHE_STOP_LOSS_ABI = [
+  {
+    name: "getPosition",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [
+      { name: "posOwner", type: "address" },
+      { name: "stockToken", type: "address" },
+      { name: "ticker", type: "string" },
+      { name: "amount", type: "uint256" },
+      { name: "premiumPaid", type: "uint256" },
+      { name: "priceOracle", type: "address" },
+      { name: "status", type: "uint8" },
+      { name: "createdAt", type: "uint256" },
+      { name: "executedAt", type: "uint256" },
+    ],
+  },
+  {
+    name: "getUserPositions",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "bytes32[]" }],
+  },
+  {
+    name: "getStats",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "_totalPositions", type: "uint256" },
+      { name: "_totalExecuted", type: "uint256" },
+    ],
+  },
+  {
+    name: "createEncryptedStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "stockToken", type: "address" },
+      { name: "ticker", type: "string" },
+      { name: "amount", type: "uint256" },
+      { name: "encryptedStopPrice", type: "tuple", components: [
+        { name: "data", type: "bytes" },
+        { name: "securityZone", type: "int32" },
+      ]},
+      { name: "priceOracle", type: "address" },
+    ],
+    outputs: [{ name: "positionId", type: "bytes32" }],
+  },
+  {
+    name: "cancelStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [],
+  },
+  {
+    name: "totalPositions",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "totalExecuted",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "FHEStopCreated",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "ticker", type: "string", indexed: false },
+      { name: "stockToken", type: "address", indexed: false },
+      { name: "amount", type: "uint256", indexed: false },
+      { name: "premiumPaid", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "FHEStopExecuted",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "usdcPaid", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "FHEStopCancelled",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "tokensReturned", type: "uint256", indexed: false },
+    ],
+  },
+] as const;

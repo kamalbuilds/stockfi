@@ -2,22 +2,53 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain, useChainId } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { formatAddress } from "@/lib/format";
 import { injected } from "wagmi/connectors";
 import { useState } from "react";
+import { robinhoodChainTestnet, arbitrumSepolia } from "@/config/wagmi";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/create", label: "Stop-Loss" },
   { href: "/private", label: "Private Stop" },
+  { href: "/fhe-privacy", label: "FHE Privacy" },
   { href: "/options", label: "Options" },
   { href: "/basket", label: "Baskets" },
   { href: "/insurance", label: "Insurance" },
   { href: "/analytics", label: "Analytics" },
 ];
+
+function ChainSelector() {
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+
+  const chains = [
+    { id: robinhoodChainTestnet.id, name: "RH Chain", color: "#10B981" },
+    { id: arbitrumSepolia.id, name: "Arb Sepolia", color: "#3B82F6" },
+  ];
+
+  const current = chains.find((c) => c.id === chainId) ?? chains[0];
+
+  return (
+    <div className="hidden sm:flex items-center">
+      <select
+        value={current.id}
+        onChange={(e) => switchChain({ chainId: Number(e.target.value) })}
+        className="rounded-lg bg-white/5 border border-white/10 px-3 py-1.5 text-sm text-zinc-300 cursor-pointer appearance-none hover:bg-white/10 transition-colors"
+        style={{ borderColor: current.color + "40" }}
+      >
+        {chains.map((c) => (
+          <option key={c.id} value={c.id} className="bg-zinc-900 text-zinc-300">
+            {c.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -65,6 +96,7 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             {isConnected && address ? (
               <div className="flex items-center gap-3">
+                <ChainSelector />
                 <div className="hidden sm:flex items-center gap-2 rounded-lg bg-white/5 px-3 py-1.5 border border-white/10">
                   <div className="h-2 w-2 rounded-full bg-emerald-400" />
                   <span className="text-sm font-mono text-zinc-300">

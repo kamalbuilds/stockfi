@@ -100,12 +100,24 @@ User deposits TSLA + pays 2% premium
 
 **Explorer:** [Blockscout](https://explorer.testnet.chain.robinhood.com)
 
+## Deployed Contracts (Arbitrum Sepolia + Fhenix FHE)
+
+| Contract | Address |
+|----------|---------|
+| FHEStopLoss | `0x95B4b7d7a23d954BF92FeDF2e00A374E22208D69` |
+| GapInsurancePool | `0xcd8D3bFb6757504896a9320Dcb451e20d4baa74B` |
+| MockUSDC | `0x3f7FC08150709C22F1741A230351B59c36bCCc8a` |
+| TSLA Oracle | `0x2636Ed9F3Aa33589810BE07B48ad9Be79de3Fd7F` |
+
+**Explorer:** [Arbiscan](https://sepolia.arbiscan.io)
+
 ## Tech Stack
 
-- **Contracts:** Solidity 0.8.24, Foundry (109 tests passing)
+- **Contracts:** Solidity 0.8.26, Foundry (130 tests passing)
+- **FHE:** Fhenix CoFHE (`@fhenixprotocol/cofhe-contracts`) for encrypted stop prices
 - **Frontend:** Next.js 16, wagmi v3, viem, TailwindCSS, shadcn/ui
 - **Bot:** Node.js, ethers.js v6, Yahoo Finance real-time prices
-- **Chain:** Robinhood Chain Testnet (Arbitrum Orbit L3, chain 46630)
+- **Chains:** Robinhood Chain Testnet (chain 46630) + Arbitrum Sepolia (chain 421614)
 
 ## Project Structure
 
@@ -120,6 +132,7 @@ stockforge/
       PrivateStopLoss.sol    # Commit-reveal privacy stop-losses
       CoveredCallVault.sol   # Permissionless covered call options
       BasketPriceOracle.sol  # AggregatorV3 wrapper for basket prices
+      FHEStopLoss.sol        # Fhenix FHE encrypted stop-losses (Arb Sepolia)
       PriceOracle.sol        # Chainlink AggregatorV3 compatible
       MockUSDC.sol           # Testnet mintable USDC
     test/
@@ -128,6 +141,7 @@ stockforge/
       PrivateStopLoss.t.sol  # 27 privacy tests
       CoveredCallVault.t.sol # 29 covered call tests
       BasketPriceOracle.t.sol # 8 composability tests
+      FHEStopLoss.t.sol      # 21 FHE encryption tests
     script/
       Deploy.s.sol           # Full deployment script
   frontend/                  # Next.js 16 + wagmi + shadcn
@@ -141,7 +155,7 @@ stockforge/
 ```bash
 cd contracts
 forge build
-forge test  # 109/109 tests (30 vault + 15 basket + 27 privacy + 29 options + 8 composability)
+forge test  # 130/130 tests (30 vault + 15 basket + 27 privacy + 29 options + 8 composability + 21 FHE)
 ```
 
 ### Frontend
@@ -176,7 +190,7 @@ Execute AMZN tx: [`0x6a65b064...`](https://explorer.testnet.chain.robinhood.com/
 
 ## Key Innovation
 
-StockForge is not an app. It's the **financial infrastructure layer** for tokenized stock DeFi on Robinhood Chain. Six composable primitives that work together:
+StockForge is not an app. It's the **financial infrastructure layer** for tokenized stock DeFi. Seven composable primitives across two chains:
 
 | Primitive | What It Does | TradFi Equivalent | Why It's Better |
 |-----------|-------------|-------------------|-----------------|
@@ -184,17 +198,22 @@ StockForge is not an app. It's the **financial infrastructure layer** for tokeni
 | **StopLossVault** | Insurance-backed stop-losses | Put options ($5K+ minimum) | One click, no expiry, no Greeks |
 | **CoveredCallVault** | Earn yield on idle stocks | Covered call writing (broker required) | Permissionless, 24/7, instant settlement |
 | **PrivateStopLoss** | Hidden stop prices (commit-reveal) | Dark pool orders | On-chain, transparent, anti-front-running |
+| **FHEStopLoss** | FHE-encrypted stop prices (Fhenix) | Nothing exists | Stop price NEVER revealed, even during execution |
 | **BasketPriceOracle** | Portfolio-level stop-losses | Portfolio insurance (institutions only) | Any basket, any user, one premium |
 | **GapInsurancePool** | Two-sided insurance market | Insurance underwriting | Anyone can be an LP, earn yield |
+
+**Multi-Chain Privacy:**
+- **Robinhood Chain**: Commit-reveal privacy (PrivateStopLoss) - stop price hidden until reveal
+- **Arbitrum Sepolia**: Fhenix FHE encryption (FHEStopLoss) - stop price PERMANENTLY encrypted via homomorphic computation. `FHE.lte(currentPrice, stopPrice)` compares encrypted values. MEV bots see nothing.
 
 **The Composability Story:**
 1. Create a tech basket: `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`
 2. Insure the entire basket with a stop-loss using BasketPriceOracle
 3. Write covered calls on individual stocks to earn premium yield
-4. Hide your stop strategy with commit-reveal privacy
+4. Hide your stop strategy with commit-reveal privacy OR FHE encryption
 5. Insurance LPs earn premiums and buy the dip automatically
 
-Five transactions. Complete financial infrastructure. Only possible because stock tokens are ERC-20s on a programmable blockchain.
+Five transactions. Complete financial infrastructure across two chains. Only possible because stock tokens are ERC-20s on programmable blockchains.
 
 ## FAQ
 

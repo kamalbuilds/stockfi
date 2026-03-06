@@ -32,6 +32,17 @@ export const RH_CHAIN_ID = 46630;
 export const RH_CHAIN_RPC = "https://rpc.testnet.chain.robinhood.com";
 export const RH_CHAIN_EXPLORER = "https://explorer.testnet.chain.robinhood.com";
 
+// ─── Arbitrum Sepolia (chain 421614) + Fhenix FHE ────────────────────────────
+export const ARB_SEPOLIA_CHAIN_ID = 421614;
+export const ARB_SEPOLIA_RPC = "https://sepolia-rollup.arbitrum.io/rpc";
+export const ARB_SEPOLIA_EXPLORER = "https://sepolia.arbiscan.io";
+
+// FHE-encrypted stop-loss (Fhenix CoFHE on Arbitrum Sepolia)
+export const FHE_STOP_LOSS_ADDRESS = "0x95B4b7d7a23d954BF92FeDF2e00A374E22208D69" as Address;
+export const ARB_USDC_ADDRESS = "0x3f7FC08150709C22F1741A230351B59c36bCCc8a" as Address;
+export const ARB_INSURANCE_POOL_ADDRESS = "0xcd8D3bFb6757504896a9320Dcb451e20d4baa74B" as Address;
+export const ARB_TSLA_ORACLE_ADDRESS = "0x2636Ed9F3Aa33589810BE07B48ad9Be79de3Fd7F" as Address;
+
 // ─── Stop-loss status names ─────────────────────────────────────────────────
 export function getStopLossStatusName(code: number): string {
   const map: Record<number, string> = {
