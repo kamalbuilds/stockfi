@@ -48,31 +48,36 @@ function BasketCard({ basketId }: { basketId: number }) {
     query: { enabled: !!BASKET_FACTORY_ADDRESS },
   });
 
-  if (!basketInfo) return null;
-
-  const [basketToken, creator, bName, symbol] = basketInfo as [Address, Address, string, string, bigint];
+  // Extract basketToken BEFORE hooks so enabled flags work without conditional returns
+  const basketToken = basketInfo
+    ? (basketInfo as [Address, Address, string, string, bigint])[0]
+    : undefined;
 
   const { data: basketPrice } = useReadContract({
     address: BASKET_FACTORY_ADDRESS,
     abi: BASKET_FACTORY_ABI,
     functionName: "getBasketPrice",
-    args: [basketToken],
+    args: basketToken ? [basketToken] : undefined,
     query: { enabled: !!basketToken, retry: false },
   });
 
   const { data: totalSupply } = useReadContract({
-    address: basketToken as Address | undefined,
+    address: basketToken,
     abi: BASKET_TOKEN_ABI,
     functionName: "totalSupply",
     query: { enabled: !!basketToken, retry: false },
   });
 
   const { data: composition } = useReadContract({
-    address: basketToken as Address | undefined,
+    address: basketToken,
     abi: BASKET_TOKEN_ABI,
     functionName: "composition",
     query: { enabled: !!basketToken, retry: false },
   });
+
+  if (!basketInfo) return null;
+
+  const [, creator, bName, symbol] = basketInfo as [Address, Address, string, string, bigint];
 
   const TICKER_BY_ADDR: Record<string, string> = {};
   for (const [t, a] of Object.entries(STOCK_TOKENS)) TICKER_BY_ADDR[a.toLowerCase()] = t;
