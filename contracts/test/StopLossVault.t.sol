@@ -400,6 +400,167 @@ contract StopLossVaultTest is Test {
         assertEq(executed, 0);
     }
 
+    // ===== Cooldown Tests =====
+
+    function test_revertDoubleExecute() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        oracle.forceUpdatePrice(24000000000);
+
+        vm.prank(bot);
+        vault.executeStopLoss(positionId);
+
+        // Second execute should revert — position is no longer ACTIVE
+        vm.prank(bot);
+        vm.expectRevert("StopLossVault: not active");
+        vault.executeStopLoss(positionId);
+    }
+
+    function test_revertCancelExecutedPosition() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        oracle.forceUpdatePrice(24000000000);
+        vm.prank(bot);
+        vault.executeStopLoss(positionId);
+
+        vm.prank(user);
+        vm.expectRevert("StopLossVault: not active");
+        vault.cancelStopLoss(positionId);
+    }
+
+    // ===== Stale Oracle Tests =====
+
+    function test_revertCreateWithStaleOracle() public {
+        // Warp time past 1-hour staleness window
+        vm.warp(block.timestamp + 3601);
+
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+
+        vm.expectRevert("StopLossVault: stale oracle");
+        vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+    }
+
+    // ===== Dust Attack Prevention =====
+
+    function test_revertDustPositionZeroPremium() public {
+        // 1 wei of TSLA at $270 gives premium = 0 in 6-dec USDC
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+
+        vm.expectRevert("StopLossVault: position too small for insurance");
+        vault.createStopLoss(
+            address(tsla), "TSLA", 1, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+    }
+
+    // ===== Admin Function Tests =====
+
+    function test_setBot() public {
+        address newBot = address(0xB0b);
+        vault.setBot(newBot);
+        // Verify new bot can execute, old bot cannot
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, newBot == address(0) ? address(oracle) : address(oracle)
+        );
+        vm.stopPrank();
+
+        oracle.forceUpdatePrice(24000000000);
+
+        // Old bot should fail
+        vm.prank(bot);
+        vm.expectRevert("StopLossVault: only bot");
+        vault.executeStopLoss(positionId);
+
+        // New bot should succeed
+        vm.prank(newBot);
+        vault.executeStopLoss(positionId);
+    }
+
+    function test_setFeeRecipient() public {
+        address feeAddr = address(0xFEE);
+        vault.setFeeRecipient(feeAddr);
+
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        oracle.forceUpdatePrice(24000000000);
+
+        uint256 feeBefore = usdc.balanceOf(feeAddr);
+        vm.prank(bot);
+        vault.executeStopLoss(positionId);
+
+        // Fee recipient should have received the 0.5% execution fee
+        uint256 feeAfter = usdc.balanceOf(feeAddr);
+        assertTrue(feeAfter > feeBefore);
+    }
+
+    function test_revertSetBotUnauthorized() public {
+        vm.prank(user);
+        vm.expectRevert();
+        vault.setBot(address(0xBAD));
+    }
+
+    // ===== Pool Accounting Tests =====
+
+    function test_poolStatsUpdatedOnCreate() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        vault.createStopLoss(address(tsla), "TSLA", 10 ether, 25000000000, address(oracle));
+        vm.stopPrank();
+
+        (, , uint256 premiums, , ) = pool.getStats();
+        // 10 TSLA * $270 * 2% = $54 = 54_000_000 USDC
+        assertEq(premiums, 54_000_000);
+    }
+
+    function test_poolStatsUpdatedOnExecute() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        // Massive gap: crash to $200
+        oracle.forceUpdatePrice(20000000000);
+
+        vm.prank(bot);
+        vault.executeStopLoss(positionId);
+
+        (, , , uint256 gapsPaid, ) = pool.getStats();
+        // Gap = (stop - market) * amount = ($250 - $200) * 5 = $250 = 250_000_000 USDC
+        assertGt(gapsPaid, 0);
+    }
+
     // ===== Helper =====
 
     function _getProviderInfo(address provider) internal view returns (GapInsurancePool.ProviderInfo memory) {

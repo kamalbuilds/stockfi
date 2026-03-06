@@ -260,6 +260,3 @@ export function useUserPositions(address?: Address) {
   return { positions, loading, error, refetch: fetchPositions };
 }
 
-// Re-export under old names for backward compatibility with existing components
-export const useGuardianStats = useVaultStats;
-export const usePriceFeeds = useStockPrices;
