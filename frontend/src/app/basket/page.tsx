@@ -57,27 +57,35 @@ function BasketCard({ basketId }: { basketId: number }) {
     abi: BASKET_FACTORY_ABI,
     functionName: "getBasketPrice",
     args: [basketToken],
-    query: { enabled: !!basketToken },
+    query: { enabled: !!basketToken, retry: false },
   });
 
   const { data: totalSupply } = useReadContract({
-    address: basketToken,
+    address: basketToken as Address | undefined,
     abi: BASKET_TOKEN_ABI,
     functionName: "totalSupply",
-    query: { enabled: !!basketToken },
+    query: { enabled: !!basketToken, retry: false },
   });
 
   const { data: composition } = useReadContract({
-    address: basketToken,
+    address: basketToken as Address | undefined,
     abi: BASKET_TOKEN_ABI,
     functionName: "composition",
-    query: { enabled: !!basketToken },
+    query: { enabled: !!basketToken, retry: false },
   });
 
   const TICKER_BY_ADDR: Record<string, string> = {};
   for (const [t, a] of Object.entries(STOCK_TOKENS)) TICKER_BY_ADDR[a.toLowerCase()] = t;
 
-  const [compTokens, compWeights] = (composition || [[], []]) as [string[], bigint[]];
+  let compTokens: string[] = [];
+  let compWeights: bigint[] = [];
+  try {
+    if (composition) {
+      const comp = composition as [string[], bigint[]];
+      compTokens = comp[0] || [];
+      compWeights = comp[1] || [];
+    }
+  } catch { /* ignore decode errors */ }
 
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
