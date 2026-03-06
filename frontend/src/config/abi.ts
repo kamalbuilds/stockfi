@@ -1,0 +1,234 @@
+export const STOP_LOSS_VAULT_ABI = [
+  {
+    name: "getPosition",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "owner", type: "address" },
+          { name: "stockToken", type: "address" },
+          { name: "ticker", type: "string" },
+          { name: "amount", type: "uint256" },
+          { name: "stopPrice", type: "uint256" },
+          { name: "premiumPaid", type: "uint256" },
+          { name: "priceOracle", type: "address" },
+          { name: "status", type: "uint8" },
+          { name: "createdAt", type: "uint256" },
+          { name: "executedAt", type: "uint256" },
+          { name: "marketPriceAtExecution", type: "uint256" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "getUserPositions",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "bytes32[]" }],
+  },
+  {
+    name: "shouldTrigger",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    name: "getDistanceToStop",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [{ name: "pct", type: "uint256" }],
+  },
+  {
+    name: "getStats",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "_totalPositions", type: "uint256" },
+      { name: "_totalExecuted", type: "uint256" },
+      { name: "_totalProtectedUsd", type: "uint256" },
+    ],
+  },
+  {
+    name: "createStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "stockToken", type: "address" },
+      { name: "ticker", type: "string" },
+      { name: "amount", type: "uint256" },
+      { name: "stopPrice", type: "uint256" },
+      { name: "priceOracle", type: "address" },
+    ],
+    outputs: [{ name: "positionId", type: "bytes32" }],
+  },
+  {
+    name: "cancelStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [],
+  },
+  {
+    name: "StopLossCreated",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "ticker", type: "string", indexed: false },
+      { name: "stockToken", type: "address", indexed: false },
+      { name: "amount", type: "uint256", indexed: false },
+      { name: "stopPrice", type: "uint256", indexed: false },
+      { name: "premiumPaid", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "StopLossExecuted",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "marketPrice", type: "uint256", indexed: false },
+      { name: "guaranteedPrice", type: "uint256", indexed: false },
+      { name: "gapCovered", type: "uint256", indexed: false },
+      { name: "usdcPaidToUser", type: "uint256", indexed: false },
+      { name: "stockTokensToPool", type: "uint256", indexed: false },
+    ],
+  },
+] as const;
+
+export const GAP_INSURANCE_POOL_ABI = [
+  {
+    name: "deposit",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    name: "withdraw",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "shareAmount", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    name: "getStats",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "_totalUsdcDeposited", type: "uint256" },
+      { name: "_poolBalance", type: "uint256" },
+      { name: "_totalPremiums", type: "uint256" },
+      { name: "_totalGapsPaid", type: "uint256" },
+      { name: "_numProviders", type: "uint256" },
+    ],
+  },
+  {
+    name: "poolBalance",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "providerValue",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "provider", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "utilizationBps",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "providers",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [
+      { name: "usdcDeposited", type: "uint256" },
+      { name: "sharesHeld", type: "uint256" },
+      { name: "premiumsClaimed", type: "uint256" },
+      { name: "depositedAt", type: "uint256" },
+    ],
+  },
+] as const;
+
+export const PRICE_ORACLE_ABI = [
+  {
+    name: "latestRoundData",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "roundId", type: "uint80" },
+      { name: "answer", type: "int256" },
+      { name: "startedAt", type: "uint256" },
+      { name: "updatedAt", type: "uint256" },
+      { name: "answeredInRound", type: "uint80" },
+    ],
+  },
+  {
+    name: "latestPrice",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "int256" }],
+  },
+  {
+    name: "isStale",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
+export const ERC20_ABI = [
+  {
+    name: "approve",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    name: "allowance",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "decimals",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+] as const;
