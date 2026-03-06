@@ -2,9 +2,9 @@ import { type Address } from "viem";
 
 // ─── Robinhood Chain Testnet (chain 46630) ──────────────────────────────────
 // Fill these in after running: forge script script/Deploy.s.sol --broadcast
-export const VAULT_ADDRESS = "0xfC524784E58bC565b6F28A09E8C7449487441ebc" as Address;
+export const VAULT_ADDRESS = "0xc1dC88DDA382D20e6F2f3F832CE941eE0369c788" as Address;
 export const INSURANCE_POOL_ADDRESS = "0xaC7681429000c66657a4c8e042f8A0C4a5f9C040" as Address;
-export const BASKET_FACTORY_ADDRESS = "0x362a50f9BA7db95B9d6915Ee5a8c95A09D886Bd3" as Address;
+export const BASKET_FACTORY_ADDRESS = "0x1A208C7A48C6102ABB61912d162aF8f7D1210856" as Address;
 
 // PriceOracle addresses (one per stock)
 export const ORACLES: Record<string, Address> = {

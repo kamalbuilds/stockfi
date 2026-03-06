@@ -75,7 +75,7 @@ User deposits TSLA + pays 2% premium
 
 | Contract | Address |
 |----------|---------|
-| StopLossVault | `0xfC524784E58bC565b6F28A09E8C7449487441ebc` |
+| StopLossVault | `0xc1dC88DDA382D20e6F2f3F832CE941eE0369c788` |
 | GapInsurancePool | `0xaC7681429000c66657a4c8e042f8A0C4a5f9C040` |
 | MockUSDC | `0xb3485Da6BB50843a20F321653869556Dc1E2F3c2` |
 | TSLA Oracle | `0x3f7FC08150709C22F1741A230351B59c36bCCc8a` |
@@ -83,8 +83,7 @@ User deposits TSLA + pays 2% premium
 | PLTR Oracle | `0xcd8D3bFb6757504896a9320Dcb451e20d4baa74B` |
 | NFLX Oracle | `0x95B4b7d7a23d954BF92FeDF2e00A374E22208D69` |
 | AMD Oracle | `0xafA4230B7154d95F1c8Bc13AD443b2e50bde7C57` |
-| BasketFactory | `0x362a50f9BA7db95B9d6915Ee5a8c95A09D886Bd3` |
-| KTECH Basket Token | `0xabfa7964b423c419a5f66cf61b65611de8c85aac` |
+| BasketFactory | `0x1A208C7A48C6102ABB61912d162aF8f7D1210856` |
 
 **Explorer:** [Blockscout](https://explorer.testnet.chain.robinhood.com)
 
