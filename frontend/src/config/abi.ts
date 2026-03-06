@@ -338,6 +338,129 @@ export const BASKET_FACTORY_ABI = [
   },
 ] as const;
 
+export const PRIVATE_STOP_LOSS_ABI = [
+  {
+    name: "commitStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "stockToken", type: "address" },
+      { name: "ticker", type: "string" },
+      { name: "amount", type: "uint256" },
+      { name: "commitHash", type: "bytes32" },
+      { name: "priceOracle", type: "address" },
+    ],
+    outputs: [{ name: "positionId", type: "bytes32" }],
+  },
+  {
+    name: "revealStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "positionId", type: "bytes32" },
+      { name: "stopPrice", type: "uint256" },
+      { name: "salt", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "cancelStopLoss",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [],
+  },
+  {
+    name: "getPosition",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "positionId", type: "bytes32" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "owner", type: "address" },
+          { name: "stockToken", type: "address" },
+          { name: "ticker", type: "string" },
+          { name: "amount", type: "uint256" },
+          { name: "commitHash", type: "bytes32" },
+          { name: "revealedStopPrice", type: "uint256" },
+          { name: "premiumPaid", type: "uint256" },
+          { name: "priceOracle", type: "address" },
+          { name: "status", type: "uint8" },
+          { name: "committedAt", type: "uint256" },
+          { name: "revealedAt", type: "uint256" },
+          { name: "executedAt", type: "uint256" },
+          { name: "revealDeadline", type: "uint256" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "getUserPositions",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "bytes32[]" }],
+  },
+  {
+    name: "getStats",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "_totalCommitted", type: "uint256" },
+      { name: "_totalRevealed", type: "uint256" },
+      { name: "_totalExecuted", type: "uint256" },
+    ],
+  },
+  {
+    name: "computeCommitHash",
+    type: "function",
+    stateMutability: "pure",
+    inputs: [
+      { name: "stopPrice", type: "uint256" },
+      { name: "salt", type: "bytes32" },
+    ],
+    outputs: [{ name: "", type: "bytes32" }],
+  },
+  {
+    name: "StopCommitted",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "ticker", type: "string", indexed: false },
+      { name: "stockToken", type: "address", indexed: false },
+      { name: "amount", type: "uint256", indexed: false },
+      { name: "commitHash", type: "bytes32", indexed: false },
+      { name: "premiumPaid", type: "uint256", indexed: false },
+      { name: "revealDeadline", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "StopRevealed",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "stopPrice", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    name: "StopExecuted",
+    type: "event",
+    inputs: [
+      { name: "positionId", type: "bytes32", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "marketPrice", type: "uint256", indexed: false },
+      { name: "guaranteedPrice", type: "uint256", indexed: false },
+      { name: "gapCovered", type: "uint256", indexed: false },
+      { name: "usdcPaidToUser", type: "uint256", indexed: false },
+    ],
+  },
+] as const;
+
 export const BASKET_TOKEN_ABI = [
   {
     name: "composition",

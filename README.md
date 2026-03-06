@@ -52,6 +52,11 @@ User deposits TSLA + pays 2% premium
   v
 [Bot executes] --> USDC at guaranteed price --> User
                --> Stock tokens              --> Insurance Pool
+
+[PrivateStopLoss] -- commit-reveal privacy layer
+  | Phase 1: Commit hash(stopPrice, salt) -- price hidden on-chain
+  | Phase 2: Reveal actual stop price -- arms the trigger
+  | Phase 3: Bot executes when price drops -- same guaranteed payout
 ```
 
 ## How It Works
@@ -86,12 +91,13 @@ User deposits TSLA + pays 2% premium
 | NFLX Oracle | `0x95B4b7d7a23d954BF92FeDF2e00A374E22208D69` |
 | AMD Oracle | `0xafA4230B7154d95F1c8Bc13AD443b2e50bde7C57` |
 | BasketFactory | `0x1A208C7A48C6102ABB61912d162aF8f7D1210856` |
+| PrivateStopLoss | `0x758bbd638CdE4094F61c51f43D4A238b08675E70` |
 
 **Explorer:** [Blockscout](https://explorer.testnet.chain.robinhood.com)
 
 ## Tech Stack
 
-- **Contracts:** Solidity 0.8.24, Foundry (45 tests passing)
+- **Contracts:** Solidity 0.8.24, Foundry (67 tests passing)
 - **Frontend:** Next.js 16, wagmi v3, viem, TailwindCSS, shadcn/ui
 - **Bot:** Node.js, ethers.js v6, Yahoo Finance real-time prices
 - **Chain:** Robinhood Chain Testnet (Arbitrum Orbit L3, chain 46630)
@@ -106,11 +112,13 @@ stockforge/
       GapInsurancePool.sol   # Two-sided insurance market
       BasketFactory.sol      # Permissionless stock index creation
       BasketToken.sol        # ERC-20 basket token (EIP-7621 inspired)
+      PrivateStopLoss.sol    # Commit-reveal privacy stop-losses
       PriceOracle.sol        # Chainlink AggregatorV3 compatible
       MockUSDC.sol           # Testnet mintable USDC
     test/
       StopLossVault.t.sol    # 30 stop-loss tests
       BasketFactory.t.sol    # 15 basket tests
+      PrivateStopLoss.t.sol  # 22 privacy tests
     script/
       Deploy.s.sol           # Full deployment script
   frontend/                  # Next.js 16 + wagmi + shadcn
@@ -124,7 +132,7 @@ stockforge/
 ```bash
 cd contracts
 forge build
-forge test  # 45/45 tests
+forge test  # 67/67 tests (30 vault + 15 basket + 22 privacy)
 ```
 
 ### Frontend
@@ -173,7 +181,13 @@ StockForge treats tokenized stocks as **composable DeFi primitives** for the fir
 - Pre-funded pool guarantees execution at stop price regardless of market gaps
 - Composable: basket tokens themselves can be protected with stop-losses
 
-**Composability stack:** Create an index. Insure it. In two transactions. This is only possible because stock tokens are ERC-20s on a programmable blockchain.
+**Privacy-Preserving Stop-Losses (Commit-Reveal)**
+- Stop price hidden on-chain via keccak256(stopPrice + salt) — no front-running, no stop hunting
+- Phase 1: Commit hash (price invisible). Phase 2: Reveal to arm. Phase 3: Bot executes.
+- Solves "stop hunting" where MEV bots deliberately trigger retail stop-losses
+- Deployed: `0x758bbd638CdE4094F61c51f43D4A238b08675E70` on RH Chain
+
+**Composability stack:** Create an index. Insure it. Privacy-protect it. In three transactions. This is only possible because stock tokens are ERC-20s on a programmable blockchain.
 
 ## FAQ
 

@@ -11,9 +11,11 @@ import { useState } from "react";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/create", label: "Create Stop-Loss" },
-  { href: "/basket", label: "Basket Factory" },
-  { href: "/insurance", label: "Insurance Pool" },
+  { href: "/create", label: "Stop-Loss" },
+  { href: "/private", label: "Private Stop" },
+  { href: "/basket", label: "Baskets" },
+  { href: "/insurance", label: "Insurance" },
+  { href: "/analytics", label: "Analytics" },
 ];
 
 export function Navbar() {

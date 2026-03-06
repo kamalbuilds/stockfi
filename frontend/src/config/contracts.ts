@@ -5,6 +5,7 @@ import { type Address } from "viem";
 export const VAULT_ADDRESS = "0xc1dC88DDA382D20e6F2f3F832CE941eE0369c788" as Address;
 export const INSURANCE_POOL_ADDRESS = "0xaC7681429000c66657a4c8e042f8A0C4a5f9C040" as Address;
 export const BASKET_FACTORY_ADDRESS = "0x1A208C7A48C6102ABB61912d162aF8f7D1210856" as Address;
+export const PRIVATE_STOP_LOSS_ADDRESS = "0x758bbd638CdE4094F61c51f43D4A238b08675E70" as Address;
 
 // PriceOracle addresses (one per stock)
 export const ORACLES: Record<string, Address> = {
