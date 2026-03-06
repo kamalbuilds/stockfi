@@ -2,8 +2,8 @@ import { type Address } from "viem";
 
 // ─── Robinhood Chain Testnet (chain 46630) ──────────────────────────────────
 // Fill these in after running: forge script script/Deploy.s.sol --broadcast
-export const VAULT_ADDRESS = "0xC5F9F5Dec04747205Cc2CEBe239A1b6790A7Dfe0" as Address;
-export const INSURANCE_POOL_ADDRESS = "0x59B830B926A87Ebb3995Ae77dA4822C50562002B" as Address;
+export const VAULT_ADDRESS = "0xfC524784E58bC565b6F28A09E8C7449487441ebc" as Address;
+export const INSURANCE_POOL_ADDRESS = "0xaC7681429000c66657a4c8e042f8A0C4a5f9C040" as Address;
 
 // PriceOracle addresses (one per stock)
 export const ORACLES: Record<string, Address> = {
@@ -23,7 +23,7 @@ export const STOCK_TOKENS: Record<string, Address> = {
   AMD:  "0x71178BAc73cBeb415514eB542a8995b82669778d" as Address,
 };
 
-export const USDC_ADDRESS = "0x7AbC92406af36935d967BF821b83776130401258" as Address;
+export const USDC_ADDRESS = "0xb3485Da6BB50843a20F321653869556Dc1E2F3c2" as Address;
 
 export const RH_CHAIN_ID = 46630;
 export const RH_CHAIN_RPC = "https://rpc.testnet.chain.robinhood.com";

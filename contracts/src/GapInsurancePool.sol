@@ -100,12 +100,14 @@ contract GapInsurancePool {
         require(amount > 0, "GapInsurancePool: zero amount");
         _transferFrom(usdc, msg.sender, address(this), amount);
 
-        // Calculate shares: first deposit gets 1:1, subsequent are proportional to pool
+        // Calculate shares: first deposit gets 1:1, subsequent proportional to current pool value
         uint256 shares;
-        if (totalShares == 0 || totalUsdcDeposited == 0) {
+        uint256 currentBalance = _usdcBalance(); // Includes premiums received
+        if (totalShares == 0 || currentBalance == 0) {
             shares = amount * 1e18 / 1e6; // Normalize to 18-dec shares
         } else {
-            shares = (amount * totalShares) / totalUsdcDeposited;
+            // Use actual balance (not totalUsdcDeposited) so premiums accrue to existing LPs
+            shares = (amount * totalShares) / currentBalance;
         }
 
         if (providers[msg.sender].sharesHeld == 0) {
@@ -173,6 +175,21 @@ contract GapInsurancePool {
         emit StockTokensReceived(token, amount);
     }
 
+    /// @notice Called when a stop-loss executes and a gap is covered.
+    ///         Records the gap payout and emits GapCovered for frontend tracking.
+    function recordGapCovered(
+        bytes32 positionId,
+        address user,
+        uint256 usdcPaid,
+        uint256 gapAmount
+    ) external onlyVault {
+        totalGapsPaid += usdcPaid;
+        if (pendingPremiums > 0) {
+            pendingPremiums = pendingPremiums > usdcPaid ? pendingPremiums - usdcPaid : 0;
+        }
+        emit GapCovered(positionId, user, usdcPaid, gapAmount);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // VIEW
     // ═══════════════════════════════════════════════════════════════
@@ -190,11 +207,16 @@ contract GapInsurancePool {
     }
 
     /// @notice Pool utilization: proportion of USDC committed vs deposited
-    function utilizationBps() external view returns (uint256) {
+    function utilizationBps() public view returns (uint256) {
         if (totalUsdcDeposited == 0) return 0;
         uint256 balance = _usdcBalance();
         if (balance >= totalUsdcDeposited) return 0;
         return ((totalUsdcDeposited - balance) * 10_000) / totalUsdcDeposited;
+    }
+
+    /// @notice Check if pool has capacity for new stop-losses (utilization < 80%)
+    function hasCapacity() external view returns (bool) {
+        return utilizationBps() < 8000;
     }
 
     function getStats() external view returns (

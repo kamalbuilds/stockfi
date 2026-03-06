@@ -7,13 +7,17 @@ contract MockUSDC {
     string public constant symbol = "USDC";
     uint8 public constant decimals = 6;
     uint256 public totalSupply;
+    address public owner;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
+    constructor() { owner = msg.sender; }
+
     function mint(address to, uint256 amount) external {
+        require(msg.sender == owner, "only owner");
         totalSupply += amount;
         balanceOf[to] += amount;
         emit Transfer(address(0), to, amount);

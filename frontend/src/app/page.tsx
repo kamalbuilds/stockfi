@@ -19,15 +19,15 @@ export default function Home() {
             Your stop-loss.
             <br />
             <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-              Guaranteed.
+              Insured.
             </span>
           </h1>
 
           <p className="mx-auto mb-4 max-w-2xl text-xl text-zinc-400">
-            Your stop-loss at $270 fills at $250 after a gap. You lose $20/share.
+            Traditional stop-losses become market orders. You set $270, you get $250.
           </p>
           <p className="mx-auto mb-10 max-w-2xl text-xl text-white font-semibold">
-            On StockForge, you get exactly $270. No matter what.
+            StockForge: a pre-funded insurance pool pays you $270. One-click downside protection for tokenized stocks.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -73,7 +73,7 @@ export default function Home() {
               </li>
               <li className="flex gap-2">
                 <span className="text-red-400 shrink-0">x</span>
-                Goldman Sachs can&apos;t solve this. Markets close.
+                Put options exist but require options knowledge and have expiry dates.
               </li>
             </ul>
           </div>
@@ -95,7 +95,7 @@ export default function Home() {
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 shrink-0">+</span>
-                Stop at $270, fills at exactly $270. Guaranteed.
+                Stop at $270, insurance pool pays you $270. Pre-funded.
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 shrink-0">+</span>
@@ -103,7 +103,7 @@ export default function Home() {
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-400 shrink-0">+</span>
-                Only possible on Robinhood Chain. New primitive.
+                First permissionless insurance market for tokenized stocks.
               </li>
             </ul>
           </div>

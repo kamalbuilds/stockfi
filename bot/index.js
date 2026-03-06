@@ -55,6 +55,7 @@ const STOP_LOSS_VAULT_ABI = [
   "function getUserPositions(address user) external view returns (bytes32[])",
   "event StopLossCreated(bytes32 indexed positionId, address indexed owner, string ticker, address stockToken, uint256 amount, uint256 stopPrice, uint256 premiumPaid)",
   "event StopLossExecuted(bytes32 indexed positionId, address indexed owner, uint256 marketPrice, uint256 guaranteedPrice, uint256 gapCovered, uint256 usdcPaidToUser, uint256 stockTokensToPool)",
+  "event StopLossCancelled(bytes32 indexed positionId, address indexed owner, uint256 tokensReturned)",
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -144,6 +145,12 @@ async function loadActivePositions() {
     for (const ev of execEvents) {
       activePositions.delete(ev.args.positionId);
     }
+    // Remove cancelled positions
+    const cancelFilter = vault.filters.StopLossCancelled();
+    const cancelEvents = await vault.queryFilter(cancelFilter, fromBlock, "latest");
+    for (const ev of cancelEvents) {
+      activePositions.delete(ev.args.positionId);
+    }
     console.log(`[positions] Loaded ${activePositions.size} active positions`);
   } catch (err) {
     console.error("[positions] Failed to load:", err.message);
@@ -187,6 +194,10 @@ function listenForNewPositions() {
   });
   vault.on("StopLossExecuted", (positionId) => {
     console.log(`[event] Stop-loss executed: positionId=${positionId}`);
+    activePositions.delete(positionId);
+  });
+  vault.on("StopLossCancelled", (positionId) => {
+    console.log(`[event] Stop-loss cancelled: positionId=${positionId}`);
     activePositions.delete(positionId);
   });
   console.log("[events] Listening for StopLoss events...");

@@ -166,9 +166,14 @@ contract StopLossVault {
         // Transfer stock tokens into this vault
         _transferFrom(stockToken, msg.sender, address(this), amount);
 
-        // Transfer USDC premium to insurance pool
+        // Transfer USDC premium to insurance pool and record it
         if (premiumUsdc > 0 && insurancePool != address(0)) {
             _transferFrom(usdc, msg.sender, insurancePool, premiumUsdc);
+            // Track premium in pool accounting
+            (bool rok,) = insurancePool.call(
+                abi.encodeWithSignature("recordPremium(uint256)", premiumUsdc)
+            );
+            require(rok, "StopLossVault: recordPremium failed");
         }
 
         // Generate position ID (keccak256 of user + token + stopPrice + timestamp)
@@ -257,8 +262,21 @@ contract StopLossVault {
             _transferFrom(usdc, insurancePool, feeRecipient, feeUsdc);
         }
 
-        // Send stock tokens from vault to insurance pool (pool takes the downside position)
+        // Send stock tokens from vault to insurance pool and record it
         _transfer(pos.stockToken, insurancePool, pos.amount);
+        (bool stok,) = insurancePool.call(
+            abi.encodeWithSignature("recordStockTokens(address,uint256)", pos.stockToken, pos.amount)
+        );
+        require(stok, "StopLossVault: recordStockTokens failed");
+
+        // Record gap covered — updates totalGapsPaid and emits GapCovered event
+        (bool gcok,) = insurancePool.call(
+            abi.encodeWithSignature(
+                "recordGapCovered(bytes32,address,uint256,uint256)",
+                positionId, pos.owner, netPayoutUsdc, gapUsd8 / 100
+            )
+        );
+        require(gcok, "StopLossVault: recordGapCovered failed");
 
         emit StopLossExecuted(
             positionId,

@@ -1,27 +1,31 @@
-# StockForge: Gap-Proof Stop-Loss Protocol
+# StockForge: Insurance-Backed Stop-Loss for Tokenized Stocks
 
-**Your stop-loss at $270 fills at $250 after a gap. You lose $20/share. On StockForge, you get exactly $270. Guaranteed.**
+**The first permissionless insurance market for downside protection on tokenized equities.**
+
+A pre-funded insurance pool pays you your stop price. One-click protection, simpler than options, built natively for Robinhood Chain.
 
 Built for [Arbitrum Open House NYC](https://lu.ma/arbitrum-open-house-nyc) on Robinhood Chain (Arbitrum Orbit L3, chain 46630).
 
 ## The Problem
 
-In TradFi, stop-loss orders can "gap through" during market crashes. Markets close at 4 PM, bad news hits overnight, and your stop at $270 fills at $250 when markets open. You lose $20/share with zero recourse.
+Stop-loss orders don't protect your price. They become market orders after trigger. You set $270, you get $250 in a fast-moving market. Put options solve this but require options knowledge, have expiry dates, and aren't available for tokenized stock tokens.
 
-This happens because:
-- Markets close and prices gap at open
-- Stop orders become market orders after trigger
-- No mechanism to guarantee execution price
+Robinhood Chain has tokenized stocks (TSLA, AMZN, PLTR, NFLX, AMD) as ERC-20s, but no native downside protection primitives.
 
 ## The Solution
 
-StockForge uses pre-funded insurance vaults on Robinhood Chain to guarantee stop-loss execution at the exact trigger price, even when markets gap through.
+StockForge is a two-sided insurance market. Users pay a 2% premium for price-guaranteed stop-losses. Insurance providers (LPs) deposit USDC, earn premiums, and take the other side of downside risk. When a stop triggers, the pool pays the user at the exact stop price, regardless of where the market is.
 
-**Why this is only possible on-chain:**
-- DeFi markets never close, so 24/7 monitoring is possible
-- Smart contracts enforce pre-committed execution prices
-- Insurance pool is pre-funded with USDC before any stop triggers
-- Chainlink-compatible oracles provide real-time stock prices
+**What makes this different from perp DEX stop-losses (dYdX, GMX):**
+- Those trade synthetic perps. StockForge protects **real tokenized stock tokens** (TSLA, AMZN ERC-20s)
+- Those have no insurance backing. StockForge has a pre-funded pool that absorbs slippage
+- Those require active trading. StockForge is set-and-forget protection (like a put option, but simpler)
+
+**What makes this different from put options:**
+- No options knowledge required (one-click protection)
+- No expiry dates (protection lasts until triggered or cancelled)
+- Anyone can be an insurance provider (permissionless underwriting, not just institutions)
+- Native to tokenized equities on Robinhood Chain
 
 ## Architecture
 
@@ -48,7 +52,7 @@ User deposits TSLA + pays 2% premium
 1. **Deposit** stock tokens (TSLA, AMZN, PLTR, NFLX, AMD) and set your stop price
 2. **Pay** a 2% insurance premium in USDC
 3. **Sleep soundly** knowing your stop is guaranteed
-4. When price drops to your stop, you receive **exactly** your guaranteed price in USDC
+4. When price drops to your stop, you receive USDC at your guaranteed stop price (minus a 0.5% execution fee)
 
 ### For Insurance Providers (LPs)
 1. **Deposit** USDC into the Gap Insurance Pool
@@ -65,9 +69,9 @@ User deposits TSLA + pays 2% premium
 
 | Contract | Address |
 |----------|---------|
-| StopLossVault | `0xC5F9F5Dec04747205Cc2CEBe239A1b6790A7Dfe0` |
-| GapInsurancePool | `0x59B830B926A87Ebb3995Ae77dA4822C50562002B` |
-| MockUSDC | `0x7AbC92406af36935d967BF821b83776130401258` |
+| StopLossVault | `0xfC524784E58bC565b6F28A09E8C7449487441ebc` |
+| GapInsurancePool | `0xaC7681429000c66657a4c8e042f8A0C4a5f9C040` |
+| MockUSDC | `0xb3485Da6BB50843a20F321653869556Dc1E2F3c2` |
 | TSLA Oracle | `0x3f7FC08150709C22F1741A230351B59c36bCCc8a` |
 | AMZN Oracle | `0x2636Ed9F3Aa33589810BE07B48ad9Be79de3Fd7F` |
 | PLTR Oracle | `0xcd8D3bFb6757504896a9320Dcb451e20d4baa74B` |
@@ -139,13 +143,24 @@ Transaction: [`0xaa68047e...`](https://explorer.testnet.chain.robinhood.com/tx/0
 
 ## Key Innovation
 
-Traditional stop-losses are **reactive** (become market orders after trigger). StockForge stop-losses are **pre-committed** (execution price locked at creation via pre-funded insurance).
+StockForge is the **first permissionless insurance market for tokenized stock downside protection**.
 
-This means:
-- No slippage on execution
-- No gap risk from overnight/weekend closures
-- Insurance pool absorbs downside, earns premiums
-- Possible only because on-chain markets never close
+- **For users:** One-click protection simpler than options, with no expiry. Pay 2%, get price-guaranteed exits.
+- **For LPs:** Earn premiums by underwriting gap risk. Receive discounted stock tokens on execution (buy-the-dip exposure).
+- **For the ecosystem:** A new DeFi primitive native to Robinhood Chain's tokenized equities. Composable, permissionless, and built for retail.
+
+The two-sided flywheel: more users = more premiums for LPs. More LPs = more capacity for users. Insurance pools are a proven DeFi primitive (Nexus Mutual, InsurAce) but nobody has applied them to tokenized stock downside protection.
+
+## FAQ
+
+**Q: How is this different from a put option?**
+A: Same economic outcome (guaranteed floor price), but simpler UX (one click, no expiry, no strike selection), and permissionless underwriting (anyone can be an LP, not just institutions).
+
+**Q: How is this different from dYdX/GMX stop-losses?**
+A: Those trade synthetic perps. StockForge protects actual tokenized stock tokens (TSLA ERC-20s on RH Chain) with a pre-funded insurance pool that absorbs price impact.
+
+**Q: What if the pool runs out?**
+A: The pool has an 80% utilization cap. New stop-losses are rejected when the pool is over-utilized. LPs always see pool health metrics on the insurance page.
 
 ## Team
 
