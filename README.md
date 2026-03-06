@@ -6,7 +6,7 @@ A pre-funded insurance pool pays you your stop price. One-click protection, simp
 
 Built for [Arbitrum Open House NYC](https://lu.ma/arbitrum-open-house-nyc) on Robinhood Chain (Arbitrum Orbit L3, chain 46630).
 
-**[Live Demo](https://stockforgeapp.vercel.app)** | **[GitHub](https://github.com/kamalbuilds/stockforge)** | **[Explorer](https://explorer.testnet.chain.robinhood.com)**
+**[Live Demo](https://stockforge-iota.vercel.app)** | **[GitHub](https://github.com/kamalbuilds/stockforge)** | **[Explorer](https://explorer.testnet.chain.robinhood.com)**
 
 ## The Problem
 
