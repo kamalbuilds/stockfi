@@ -1,8 +1,8 @@
-# StockForge: Insurance-Backed Stop-Loss for Tokenized Stocks
+# StockForge: The DeFi Composability Layer for Tokenized Stocks
 
-**The first permissionless insurance market for downside protection on tokenized equities.**
+**Six composable financial primitives for tokenized equities. Baskets, insurance, options, privacy. All permissionless. All on Robinhood Chain.**
 
-A pre-funded insurance pool pays you your stop price. One-click protection, simpler than options, built natively for Robinhood Chain.
+Create stock indexes in one transaction. Protect them with insurance-backed stop-losses. Earn yield by writing covered calls. Hide your stops from front-runners. This is the Bloomberg Terminal of on-chain stocks.
 
 Built for [Arbitrum Open House NYC](https://lu.ma/arbitrum-open-house-nyc) on Robinhood Chain (Arbitrum Orbit L3, chain 46630).
 
@@ -16,24 +16,27 @@ Robinhood Chain has tokenized stocks (TSLA, AMZN, PLTR, NFLX, AMD) as ERC-20s, b
 
 ## The Solution
 
-StockForge is the DeFi composability layer for tokenized stocks. Two primitives:
+StockForge is the DeFi composability layer for tokenized stocks. Six primitives that compose together:
 
 **1. Permissionless Stock Baskets (EIP-7621 inspired)**
-Create custom stock indexes in one transaction. `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`. The basket is an ERC-20 backed by real stock tokens. Mint by depositing proportional tokens, burn to redeem. In TradFi, creating an ETF costs $250K+ and requires SEC approval. On StockForge: one transaction.
+Create custom stock indexes in one transaction. `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`. In TradFi, creating an ETF costs $250K+ and requires SEC approval. On StockForge: one click.
 
 **2. Insurance-Backed Stop-Losses**
-Users pay a 2% premium for price-guaranteed stop-losses. Insurance providers (LPs) deposit USDC, earn premiums, and take the other side of downside risk. When a stop triggers, the pool pays the user at the exact stop price, regardless of where the market is.
+Pay a 2% premium, get a price-guaranteed exit. A pre-funded pool absorbs gaps. Unlike dYdX/GMX stop-losses that execute at market price, StockForge pays your exact stop price.
 
-**What makes this different from perp DEX stop-losses (dYdX, GMX):**
-- Those trade synthetic perps. StockForge protects **real tokenized stock tokens** (TSLA, AMZN ERC-20s)
-- Those have no insurance backing. StockForge has a pre-funded pool that absorbs slippage
-- Those require active trading. StockForge is set-and-forget protection (like a put option, but simpler)
+**3. Covered Call Options**
+First permissionless covered call market for tokenized stocks. Writers deposit stock tokens and earn premium yield. Buyers get leveraged upside exposure. In TradFi, this requires options approval and a broker. Here: one transaction.
 
-**What makes this different from put options:**
-- No options knowledge required (one-click protection)
-- No expiry dates (protection lasts until triggered or cancelled)
-- Anyone can be an insurance provider (permissionless underwriting, not just institutions)
-- Native to tokenized equities on Robinhood Chain
+**4. Privacy Stop-Losses (Commit-Reveal)**
+Hide your stop price on-chain. No front-running. No stop hunting. Commit hash(stopPrice, salt) then reveal when ready.
+
+**5. Portfolio Insurance via BasketPriceOracle**
+Insure your entire basket, not just individual stocks. One premium, total portfolio protection. Create a tech basket, set a stop-loss on the whole thing. This doesn't exist anywhere.
+
+**6. Two-Sided Insurance Market**
+LPs deposit USDC, earn 2% premiums, receive discounted stock tokens when gaps occur. A built-in buy-the-dip strategy with yield.
+
+**The composability story:** Create a basket (1). Set a portfolio stop-loss (2+5). Earn yield on idle tokens (3). Hide your strategy (4). Insurance providers earn yield (6). Six primitives, one platform.
 
 ## Architecture
 
@@ -92,12 +95,14 @@ User deposits TSLA + pays 2% premium
 | AMD Oracle | `0xafA4230B7154d95F1c8Bc13AD443b2e50bde7C57` |
 | BasketFactory | `0x1A208C7A48C6102ABB61912d162aF8f7D1210856` |
 | PrivateStopLoss | `0x758bbd638CdE4094F61c51f43D4A238b08675E70` |
+| CoveredCallVault | `0x4369b5e5866C705f123EAA6a8f22dA6E03D92395` |
+| BasketPriceOracle | `0xe7C6578465F29b9820f57937eAc9B6E3f932609c` |
 
 **Explorer:** [Blockscout](https://explorer.testnet.chain.robinhood.com)
 
 ## Tech Stack
 
-- **Contracts:** Solidity 0.8.24, Foundry (67 tests passing)
+- **Contracts:** Solidity 0.8.24, Foundry (109 tests passing)
 - **Frontend:** Next.js 16, wagmi v3, viem, TailwindCSS, shadcn/ui
 - **Bot:** Node.js, ethers.js v6, Yahoo Finance real-time prices
 - **Chain:** Robinhood Chain Testnet (Arbitrum Orbit L3, chain 46630)
@@ -113,12 +118,16 @@ stockforge/
       BasketFactory.sol      # Permissionless stock index creation
       BasketToken.sol        # ERC-20 basket token (EIP-7621 inspired)
       PrivateStopLoss.sol    # Commit-reveal privacy stop-losses
+      CoveredCallVault.sol   # Permissionless covered call options
+      BasketPriceOracle.sol  # AggregatorV3 wrapper for basket prices
       PriceOracle.sol        # Chainlink AggregatorV3 compatible
       MockUSDC.sol           # Testnet mintable USDC
     test/
       StopLossVault.t.sol    # 30 stop-loss tests
       BasketFactory.t.sol    # 15 basket tests
-      PrivateStopLoss.t.sol  # 22 privacy tests
+      PrivateStopLoss.t.sol  # 27 privacy tests
+      CoveredCallVault.t.sol # 29 covered call tests
+      BasketPriceOracle.t.sol # 8 composability tests
     script/
       Deploy.s.sol           # Full deployment script
   frontend/                  # Next.js 16 + wagmi + shadcn
@@ -132,7 +141,7 @@ stockforge/
 ```bash
 cd contracts
 forge build
-forge test  # 67/67 tests (30 vault + 15 basket + 22 privacy)
+forge test  # 109/109 tests (30 vault + 15 basket + 27 privacy + 29 options + 8 composability)
 ```
 
 ### Frontend
@@ -167,27 +176,25 @@ Execute AMZN tx: [`0x6a65b064...`](https://explorer.testnet.chain.robinhood.com/
 
 ## Key Innovation
 
-StockForge treats tokenized stocks as **composable DeFi primitives** for the first time.
+StockForge is not an app. It's the **financial infrastructure layer** for tokenized stock DeFi on Robinhood Chain. Six composable primitives that work together:
 
-**Permissionless Stock Indexes (BasketFactory)**
-- Create custom stock baskets as ERC-20 tokens in one transaction
-- Inspired by EIP-7621 (Basket Token Standard)
-- Weighted price computed from underlying Chainlink-compatible oracles
-- In TradFi: creating an ETF costs $250K+ and requires SEC approval. On StockForge: free, instant, permissionless.
-- Demo: KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD. Live on RH Chain with weighted price $275.24.
+| Primitive | What It Does | TradFi Equivalent | Why It's Better |
+|-----------|-------------|-------------------|-----------------|
+| **BasketFactory** | Custom stock indexes as ERC-20 | ETF ($250K+ to create) | Free, instant, permissionless |
+| **StopLossVault** | Insurance-backed stop-losses | Put options ($5K+ minimum) | One click, no expiry, no Greeks |
+| **CoveredCallVault** | Earn yield on idle stocks | Covered call writing (broker required) | Permissionless, 24/7, instant settlement |
+| **PrivateStopLoss** | Hidden stop prices (commit-reveal) | Dark pool orders | On-chain, transparent, anti-front-running |
+| **BasketPriceOracle** | Portfolio-level stop-losses | Portfolio insurance (institutions only) | Any basket, any user, one premium |
+| **GapInsurancePool** | Two-sided insurance market | Insurance underwriting | Anyone can be an LP, earn yield |
 
-**Insurance-Backed Stop-Losses**
-- Two-sided insurance market: users pay 2% premium, LPs earn yield by underwriting risk
-- Pre-funded pool guarantees execution at stop price regardless of market gaps
-- Composable: basket tokens themselves can be protected with stop-losses
+**The Composability Story:**
+1. Create a tech basket: `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`
+2. Insure the entire basket with a stop-loss using BasketPriceOracle
+3. Write covered calls on individual stocks to earn premium yield
+4. Hide your stop strategy with commit-reveal privacy
+5. Insurance LPs earn premiums and buy the dip automatically
 
-**Privacy-Preserving Stop-Losses (Commit-Reveal)**
-- Stop price hidden on-chain via keccak256(stopPrice + salt) — no front-running, no stop hunting
-- Phase 1: Commit hash (price invisible). Phase 2: Reveal to arm. Phase 3: Bot executes.
-- Solves "stop hunting" where MEV bots deliberately trigger retail stop-losses
-- Deployed: `0x758bbd638CdE4094F61c51f43D4A238b08675E70` on RH Chain
-
-**Composability stack:** Create an index. Insure it. Privacy-protect it. In three transactions. This is only possible because stock tokens are ERC-20s on a programmable blockchain.
+Five transactions. Complete financial infrastructure. Only possible because stock tokens are ERC-20s on a programmable blockchain.
 
 ## FAQ
 
