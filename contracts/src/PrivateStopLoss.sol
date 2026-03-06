@@ -263,6 +263,51 @@ contract PrivateStopLoss {
         uint256 marketPrice = uint256(marketPriceRaw);
         require(marketPrice <= pos.revealedStopPrice, "PrivateStopLoss: price above stop");
 
+        _executePosition(positionId, marketPrice);
+    }
+
+    /// @notice Bot keeper: atomically reveal + execute when price crosses the committed stop.
+    ///         The user registers their salt with the bot off-chain. The bot holds it
+    ///         encrypted and calls this when the oracle price drops below the stop price.
+    ///         This makes the UX equivalent to FHE: the stop price is NEVER visible on-chain
+    ///         until the moment of execution, and the user never has to manually reveal.
+    /// @param positionId The committed position
+    /// @param stopPrice  The actual stop price (8 decimals) that was used in commitHash
+    /// @param salt       The random salt used in commitHash
+    function revealAndExecute(
+        bytes32 positionId,
+        uint256 stopPrice,
+        bytes32 salt
+    ) external onlyBot {
+        PrivatePosition storage pos = positions[positionId];
+        require(pos.status == PrivateStopStatus.COMMITTED, "PrivateStopLoss: not committed");
+        require(block.timestamp <= pos.revealDeadline, "PrivateStopLoss: reveal expired");
+
+        // Verify the committed hash
+        bytes32 expectedHash = keccak256(abi.encodePacked(stopPrice, salt));
+        require(expectedHash == pos.commitHash, "PrivateStopLoss: hash mismatch");
+
+        // Verify oracle price is at or below stop
+        (, int256 marketPriceRaw, , uint256 updatedAt,) = IAggregatorV3(pos.priceOracle).latestRoundData();
+        require(marketPriceRaw > 0, "PrivateStopLoss: no oracle price");
+        require(block.timestamp - updatedAt <= 3600, "PrivateStopLoss: stale oracle");
+        uint256 marketPrice = uint256(marketPriceRaw);
+        require(marketPrice <= stopPrice, "PrivateStopLoss: price above stop");
+
+        // Reveal in storage (emits event for transparency after execution)
+        pos.revealedStopPrice = stopPrice;
+        pos.revealedAt = block.timestamp;
+        pos.status = PrivateStopStatus.REVEALED;
+        totalRevealed++;
+        emit StopRevealed(positionId, pos.owner, stopPrice);
+
+        _executePosition(positionId, marketPrice);
+    }
+
+    /// @dev Shared payout logic for executeStopLoss and revealAndExecute
+    function _executePosition(bytes32 positionId, uint256 marketPrice) internal {
+        PrivatePosition storage pos = positions[positionId];
+
         pos.status = PrivateStopStatus.EXECUTED;
         pos.executedAt = block.timestamp;
 

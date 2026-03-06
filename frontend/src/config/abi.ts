@@ -364,6 +364,17 @@ export const PRIVATE_STOP_LOSS_ABI = [
     outputs: [],
   },
   {
+    name: "revealAndExecute",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "positionId", type: "bytes32" },
+      { name: "stopPrice", type: "uint256" },
+      { name: "salt", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
     name: "cancelStopLoss",
     type: "function",
     stateMutability: "nonpayable",

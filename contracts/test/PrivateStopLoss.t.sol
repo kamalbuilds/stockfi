@@ -421,6 +421,88 @@ contract PrivateStopLossTest is Test {
         assertEq(ids[0], posId);
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // REVEAL-AND-EXECUTE (bot keeper auto-reveal)
+    // ═══════════════════════════════════════════════════════════════
+
+    function test_revealAndExecute_bot_keeper() public {
+        bytes32 hash = _commitHash(STOP_PRICE, SALT);
+
+        vm.prank(user);
+        bytes32 posId = psl.commitStopLoss(address(tsla), "TSLA", 10 ether, hash, address(oracle));
+
+        // Stop is COMMITTED — price still above stop, keeper should NOT trigger
+        assertEq(uint8(psl.getPosition(posId).status), uint8(PrivateStopLoss.PrivateStopStatus.COMMITTED));
+
+        // Price drops below stop — bot atomically reveals + executes
+        oracle.updatePrice(int256(262_00000000)); // $262
+
+        uint256 userUsdcBefore = usdc.balanceOf(user);
+
+        vm.prank(botAddr);
+        psl.revealAndExecute(posId, STOP_PRICE, SALT);
+
+        PrivateStopLoss.PrivatePosition memory pos = psl.getPosition(posId);
+        assertEq(uint8(pos.status), uint8(PrivateStopLoss.PrivateStopStatus.EXECUTED));
+        assertEq(pos.revealedStopPrice, STOP_PRICE);
+
+        // User receives USDC at guaranteed $270 price, not market $262
+        uint256 guaranteed8 = (10 ether * STOP_PRICE) / 1e18;
+        uint256 guaranteedUsdc = guaranteed8 / 100;
+        uint256 fee = (guaranteedUsdc * 50) / 10_000;
+        assertEq(usdc.balanceOf(user), userUsdcBefore + (guaranteedUsdc - fee));
+    }
+
+    function test_revealAndExecute_price_above_stop_reverts() public {
+        bytes32 hash = _commitHash(STOP_PRICE, SALT);
+
+        vm.prank(user);
+        bytes32 posId = psl.commitStopLoss(address(tsla), "TSLA", 10 ether, hash, address(oracle));
+
+        // Price still at $280 — above stop of $270 — keeper must NOT execute
+        vm.prank(botAddr);
+        vm.expectRevert("PrivateStopLoss: price above stop");
+        psl.revealAndExecute(posId, STOP_PRICE, SALT);
+    }
+
+    function test_revealAndExecute_wrong_salt_reverts() public {
+        bytes32 hash = _commitHash(STOP_PRICE, SALT);
+
+        vm.prank(user);
+        bytes32 posId = psl.commitStopLoss(address(tsla), "TSLA", 10 ether, hash, address(oracle));
+        oracle.updatePrice(int256(262_00000000));
+
+        vm.prank(botAddr);
+        vm.expectRevert("PrivateStopLoss: hash mismatch");
+        psl.revealAndExecute(posId, STOP_PRICE, keccak256("wrong_salt"));
+    }
+
+    function test_revealAndExecute_only_bot() public {
+        bytes32 hash = _commitHash(STOP_PRICE, SALT);
+
+        vm.prank(user);
+        bytes32 posId = psl.commitStopLoss(address(tsla), "TSLA", 10 ether, hash, address(oracle));
+        oracle.updatePrice(int256(262_00000000));
+
+        address attacker = address(0xDEAD);
+        vm.prank(attacker);
+        vm.expectRevert("PrivateStopLoss: only bot");
+        psl.revealAndExecute(posId, STOP_PRICE, SALT);
+    }
+
+    function test_revealAndExecute_emits_both_events() public {
+        bytes32 hash = _commitHash(STOP_PRICE, SALT);
+
+        vm.prank(user);
+        bytes32 posId = psl.commitStopLoss(address(tsla), "TSLA", 10 ether, hash, address(oracle));
+        oracle.updatePrice(int256(262_00000000));
+
+        vm.prank(botAddr);
+        vm.expectEmit(true, true, false, true);
+        emit PrivateStopLoss.StopRevealed(posId, user, STOP_PRICE);
+        psl.revealAndExecute(posId, STOP_PRICE, SALT);
+    }
+
     function test_gap_coverage_correct() public {
         bytes32 hash = _commitHash(STOP_PRICE, SALT);
 

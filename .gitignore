@@ -7,3 +7,4 @@ frontend/.next/
 progress/
 .vercel
 .env*.local
+bot/commit-registry.json

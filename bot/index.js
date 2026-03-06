@@ -11,8 +11,14 @@
 
 import { ethers } from "ethers";
 import { createRequire } from "module";
+import http from "http";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 const require = createRequire(import.meta.url);
 require("dotenv").config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 
@@ -31,6 +37,8 @@ const AMD_ORACLE_ADDRESS     = process.env.AMD_ORACLE_ADDRESS     || "";
 
 const UPDATE_INTERVAL_MS  = 30_000;  // push prices every 30s
 const TRIGGER_CHECK_EVERY = 2;       // check triggers every N price-update cycles
+const REGISTRY_PORT       = parseInt(process.env.BOT_PORT || "3001");
+const REGISTRY_FILE       = path.join(__dirname, "commit-registry.json");
 
 // Stock tickers → Yahoo Finance symbol → oracle address
 const STOCKS = [
@@ -62,6 +70,7 @@ const STOP_LOSS_VAULT_ABI = [
 const PRIVATE_STOP_LOSS_ABI = [
   "function shouldTrigger(bytes32 positionId) external view returns (bool)",
   "function executeStopLoss(bytes32 positionId) external",
+  "function revealAndExecute(bytes32 positionId, uint256 stopPrice, bytes32 salt) external",
   "event StopCommitted(bytes32 indexed positionId, address indexed owner, string ticker, address stockToken, uint256 amount, bytes32 commitHash, uint256 premiumPaid, uint256 revealDeadline)",
   "event StopRevealed(bytes32 indexed positionId, address indexed owner, uint256 stopPrice)",
   "event StopExecuted(bytes32 indexed positionId, address indexed owner, uint256 marketPrice, uint256 guaranteedPrice, uint256 gapCovered, uint256 usdcPaidToUser)",
@@ -79,6 +88,46 @@ const oracleContracts = {};
 // Track known active position IDs (populated from events)
 const activePositions = new Set();
 const activePrivatePositions = new Set();
+
+// ─── Keeper registry (positionId -> {stopPrice, salt, oracle}) ───────────────
+// Populated by users registering via POST /register-commit or from file on startup.
+// The bot holds salts off-chain and auto-reveals + executes when price drops.
+// This gives commit-reveal the UX of FHE: stop price is NEVER visible on-chain.
+const commitRegistry = new Map();
+
+function loadRegistryFromDisk() {
+  try {
+    if (!fs.existsSync(REGISTRY_FILE)) return;
+    const data = JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf8"));
+    for (const entry of data) {
+      commitRegistry.set(entry.positionId, {
+        stopPrice: BigInt(entry.stopPrice),
+        salt: entry.salt,
+        oracle: entry.oracle,
+      });
+    }
+    console.log(`[registry] Loaded ${commitRegistry.size} commits from disk`);
+  } catch (err) {
+    console.error("[registry] Failed to load from disk:", err.message);
+  }
+}
+
+function saveRegistryToDisk() {
+  try {
+    const data = [];
+    for (const [positionId, entry] of commitRegistry) {
+      data.push({
+        positionId,
+        stopPrice: entry.stopPrice.toString(),
+        salt: entry.salt,
+        oracle: entry.oracle,
+      });
+    }
+    fs.writeFileSync(REGISTRY_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error("[registry] Failed to save to disk:", err.message);
+  }
+}
 
 // ─── Price fetching (Yahoo Finance unofficial JSON) ───────────────────────────
 
@@ -251,6 +300,107 @@ async function checkAndExecutePrivateTriggers() {
   }
 }
 
+// ─── Keeper: auto-reveal + execute committed positions ───────────────────────
+
+async function checkAndAutoRevealExecute() {
+  if (commitRegistry.size === 0 || !privateSL) return;
+  console.log(`[keeper] Checking ${commitRegistry.size} registered commits for auto-reveal...`);
+
+  for (const [positionId, entry] of commitRegistry) {
+    try {
+      // Check oracle price for this stock
+      const oracleContract = new ethers.Contract(entry.oracle, PRICE_ORACLE_ABI, provider);
+      const price = await oracleContract.latestPrice();
+      if (price <= 0n) continue;
+
+      if (price > entry.stopPrice) {
+        // Price still above stop — do nothing (stop price remains hidden)
+        continue;
+      }
+
+      console.log(`  [KEEPER] Position ${positionId}: oracle $${Number(price) / 1e8} <= stop $${Number(entry.stopPrice) / 1e8} — auto-reveal-execute!`);
+      const tx = await privateSL.revealAndExecute(positionId, entry.stopPrice, entry.salt);
+      const receipt = await tx.wait();
+      console.log(`  [KEEPER-EXECUTED] tx: ${tx.hash} (block ${receipt.blockNumber})`);
+      commitRegistry.delete(positionId);
+      activePrivatePositions.delete(positionId);
+      saveRegistryToDisk();
+    } catch (err) {
+      // Position may already be executed/cancelled — clean up
+      if (
+        err.message.includes("not committed") ||
+        err.message.includes("reveal expired") ||
+        err.message.includes("cannot cancel")
+      ) {
+        commitRegistry.delete(positionId);
+        saveRegistryToDisk();
+      } else {
+        console.error(`  [keeper-err] ${positionId}:`, err.message);
+      }
+    }
+  }
+}
+
+// ─── HTTP server: frontend registers salts here ──────────────────────────────
+
+function startRegistryServer() {
+  const server = http.createServer((req, res) => {
+    // CORS for local frontend dev
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.method === "POST" && req.url === "/register-commit") {
+      let body = "";
+      req.on("data", (chunk) => { body += chunk; });
+      req.on("end", () => {
+        try {
+          const { positionId, stopPrice, salt, oracle } = JSON.parse(body);
+          if (!positionId || !stopPrice || !salt || !oracle) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Missing fields: positionId, stopPrice, salt, oracle" }));
+            return;
+          }
+          commitRegistry.set(positionId, {
+            stopPrice: BigInt(stopPrice),
+            salt,
+            oracle,
+          });
+          saveRegistryToDisk();
+          console.log(`[registry] Registered keeper commit: positionId=${positionId} stop=$${Number(BigInt(stopPrice)) / 1e8}`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, positionId }));
+        } catch (err) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, registered: commitRegistry.size }));
+      return;
+    }
+
+    res.writeHead(404);
+    res.end();
+  });
+
+  server.listen(REGISTRY_PORT, () => {
+    console.log(`[registry] Keeper HTTP server listening on port ${REGISTRY_PORT}`);
+    console.log(`  POST /register-commit  { positionId, stopPrice, salt, oracle }`);
+    console.log(`  GET  /health`);
+  });
+}
+
 // ─── Event listener: track new positions in real time ────────────────────────
 
 function listenForNewPositions() {
@@ -325,8 +475,15 @@ async function main() {
     console.warn("[warn] PRIVATE_SL_ADDRESS not set — private stop-loss execution disabled");
   }
 
+  // Load keeper registry (salts for auto-reveal-execute)
+  loadRegistryFromDisk();
+  startRegistryServer();
+
   // Initial price push
   await updateOracles();
+
+  // Run keeper check immediately after first price push
+  if (PRIVATE_SL_ADDRESS) await checkAndAutoRevealExecute();
 
   // Main loop
   let cycle = 0;
@@ -335,7 +492,10 @@ async function main() {
     await updateOracles();
     if (cycle % TRIGGER_CHECK_EVERY === 0) {
       if (VAULT_ADDRESS) await checkAndExecuteTriggers();
-      if (PRIVATE_SL_ADDRESS) await checkAndExecutePrivateTriggers();
+      if (PRIVATE_SL_ADDRESS) {
+        await checkAndExecutePrivateTriggers();
+        await checkAndAutoRevealExecute();
+      }
     }
   }, UPDATE_INTERVAL_MS);
 
