@@ -16,29 +16,29 @@ export default function Home() {
           </div>
 
           <h1 className="mb-6 text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-            Your stop-loss.
+            DeFi primitives for
             <br />
             <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-              Insured.
+              tokenized stocks.
             </span>
           </h1>
 
           <p className="mx-auto mb-4 max-w-2xl text-xl text-zinc-400">
-            Traditional stop-losses become market orders. You set $270, you get $250.
+            Create custom stock indexes. Insure them with one click. No SEC approval. No $250K minimum.
           </p>
           <p className="mx-auto mb-10 max-w-2xl text-xl text-white font-semibold">
-            StockForge: a pre-funded insurance pool pays you $270. One-click downside protection for tokenized stocks.
+            Permissionless baskets + insurance-backed stop-losses. Built natively for Robinhood Chain.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/create">
+            <Link href="/basket">
               <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 px-8">
-                Create Stop-Loss
+                Create a Basket
               </Button>
             </Link>
-            <Link href="/insurance">
+            <Link href="/create">
               <Button size="lg" variant="outline" className="border-white/10 bg-white/5 text-white px-8">
-                Provide Insurance
+                Protect with Stop-Loss
               </Button>
             </Link>
           </div>
@@ -113,28 +113,34 @@ export default function Home() {
       {/* How It Works */}
       <section className="mx-auto max-w-5xl px-4 pb-24">
         <h2 className="mb-12 text-center text-3xl font-bold">How It Works</h2>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-4 gap-6">
           {[
             {
               step: "01",
-              title: "Deposit & Set Stop",
-              desc: "Deposit your TSLA/AMZN/PLTR tokens and set your guaranteed stop-loss price. Pay a 2% premium to the insurance pool.",
+              title: "Create a Basket",
+              desc: "Pick your stocks and weights. KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD. Deployed as an ERC-20 in one tx.",
               color: "text-emerald-400",
             },
             {
               step: "02",
-              title: "Insurance Backs It",
-              desc: "Insurance providers deposit USDC to earn yield from premiums. They pre-fund every stop-loss at the guaranteed price.",
+              title: "Mint Basket Tokens",
+              desc: "Deposit proportional stock tokens. Receive basket tokens representing your custom index. Burn to redeem anytime.",
               color: "text-teal-400",
             },
             {
               step: "03",
-              title: "Guaranteed Execution",
-              desc: "When price drops to your stop, you receive USDC at your guaranteed price regardless of where the market is.",
+              title: "Insure with Stop-Loss",
+              desc: "Set a stop price on your basket (or individual stocks). Pay 2% premium. Insurance pool pre-funds your guaranteed price.",
               color: "text-cyan-400",
             },
+            {
+              step: "04",
+              title: "Sleep Soundly",
+              desc: "Price bot monitors 24/7. If price drops to your stop, the pool pays you at the insured price. No gaps, no slippage.",
+              color: "text-violet-400",
+            },
           ].map((item) => (
-            <div key={item.step} className="rounded-xl border border-white/5 bg-white/2 p-6">
+            <div key={item.step} className="rounded-xl border border-white/5 bg-white/[0.02] p-6">
               <div className={`mb-3 text-3xl font-bold ${item.color}`}>{item.step}</div>
               <h3 className="mb-2 text-lg font-semibold text-white">{item.title}</h3>
               <p className="text-sm text-zinc-400">{item.desc}</p>
