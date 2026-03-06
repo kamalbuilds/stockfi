@@ -156,6 +156,14 @@ contract StopLossVault {
         uint256 currentPrice = uint256(currentPriceRaw);
         require(stopPrice < currentPrice, "StopLossVault: stop must be below current price");
 
+        // Check insurance pool has capacity (< 80% utilized)
+        if (insurancePool != address(0)) {
+            (bool capOk, bytes memory capData) = insurancePool.staticcall(
+                abi.encodeWithSignature("hasCapacity()")
+            );
+            require(capOk && abi.decode(capData, (bool)), "StopLossVault: pool at capacity");
+        }
+
         // Calculate USDC premium: 2% of position value
         // positionValue = amount (18 dec) * currentPrice (8 dec) / 1e18 -> gives 8 dec result
         uint256 positionValueUsd8 = (amount * currentPrice) / 1e18;

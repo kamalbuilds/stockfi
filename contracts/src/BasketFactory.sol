@@ -26,6 +26,8 @@ contract BasketFactory {
     /// @notice Basket tokens are issued 1:1 per unit of underlying (1e18 base)
     uint256 public constant BASKET_UNIT = 1e18;
 
+    address public owner;
+
     // ─── State ──────────────────────────────────────────────────────
 
     struct BasketInfo {
@@ -40,6 +42,13 @@ contract BasketFactory {
     mapping(address => uint256[]) public basketsByCreator; // creator -> basket indices
     mapping(address => bool) public isBasketToken;         // basketToken -> exists
     mapping(address => address) public oracleFor;          // stockToken -> PriceOracle
+
+    constructor() { owner = msg.sender; }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "BasketFactory: only owner");
+        _;
+    }
 
     // ─── Events ─────────────────────────────────────────────────────
     event BasketCreated(
@@ -201,8 +210,8 @@ contract BasketFactory {
 
     // ─── Oracle Integration ─────────────────────────────────────────
 
-    /// @notice Register a PriceOracle for a stock token (anyone can set; last writer wins)
-    function setOracle(address stockToken, address oracle) external {
+    /// @notice Register a PriceOracle for a stock token (owner only)
+    function setOracle(address stockToken, address oracle) external onlyOwner {
         require(stockToken != address(0) && oracle != address(0), "BasketFactory: zero address");
         oracleFor[stockToken] = oracle;
     }

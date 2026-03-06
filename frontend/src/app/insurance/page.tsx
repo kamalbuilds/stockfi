@@ -126,9 +126,14 @@ export default function InsurancePage() {
                 style={{ width: `${Math.min(parseFloat(utilPct), 100)}%` }}
               />
             </div>
-            <p className="mt-1.5 text-xs text-zinc-600">
-              Lower utilization = more capacity to back new stop-losses
-            </p>
+            <div className="mt-1.5 flex justify-between text-xs">
+              <span className="text-zinc-600">
+                Lower utilization = more capacity to back new stop-losses
+              </span>
+              <span className={parseFloat(utilPct) >= 80 ? "text-red-400 font-semibold" : "text-zinc-600"}>
+                {parseFloat(utilPct) >= 80 ? "Pool at capacity - new stops blocked" : "80% cap enforced on-chain"}
+              </span>
+            </div>
           </div>
         )}
 
