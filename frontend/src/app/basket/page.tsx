@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
-import { parseUnits } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,8 +38,17 @@ function StockWeightRow({
   );
 }
 
-// A basket card showing live data
+// Full basket card with mint/burn
 function BasketCard({ basketId }: { basketId: number }) {
+  const { address } = useAccount();
+  const [tab, setTab] = useState<"info" | "mint" | "burn">("info");
+  const [mintAmount, setMintAmount] = useState("");
+  const [burnAmount, setBurnAmount] = useState("");
+  const [txMsg, setTxMsg] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const { writeContractAsync } = useWriteContract();
+
+  // ── All hooks must be unconditional ──────────────────────────────────
   const { data: basketInfo } = useReadContract({
     address: BASKET_FACTORY_ADDRESS,
     abi: BASKET_FACTORY_ABI,
@@ -48,7 +57,6 @@ function BasketCard({ basketId }: { basketId: number }) {
     query: { enabled: !!BASKET_FACTORY_ADDRESS },
   });
 
-  // Extract basketToken BEFORE hooks so enabled flags work without conditional returns
   const basketToken = basketInfo
     ? (basketInfo as [Address, Address, string, string, bigint])[0]
     : undefined;
@@ -75,9 +83,30 @@ function BasketCard({ basketId }: { basketId: number }) {
     query: { enabled: !!basketToken, retry: false },
   });
 
+  const { data: myBalance } = useReadContract({
+    address: basketToken,
+    abi: BASKET_TOKEN_ABI,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!basketToken && !!address, retry: false, refetchInterval: 10_000 },
+  });
+
+  const mintAmountWei = mintAmount && parseFloat(mintAmount) > 0
+    ? parseUnits(mintAmount, 18)
+    : undefined;
+
+  const { data: quoteMintData } = useReadContract({
+    address: BASKET_FACTORY_ADDRESS,
+    abi: BASKET_FACTORY_ABI,
+    functionName: "quoteMint",
+    args: basketToken && mintAmountWei ? [basketToken, mintAmountWei] : undefined,
+    query: { enabled: !!basketToken && !!mintAmountWei, retry: false },
+  });
+
+  // ── Early return after all hooks ──────────────────────────────────
   if (!basketInfo) return null;
 
-  const [, creator, bName, symbol] = basketInfo as [Address, Address, string, string, bigint];
+  const [, , bName, symbol] = basketInfo as [Address, Address, string, string, bigint];
 
   const TICKER_BY_ADDR: Record<string, string> = {};
   for (const [t, a] of Object.entries(STOCK_TOKENS)) TICKER_BY_ADDR[a.toLowerCase()] = t;
@@ -92,9 +121,76 @@ function BasketCard({ basketId }: { basketId: number }) {
     }
   } catch { /* ignore decode errors */ }
 
+  const myBalanceNum = myBalance ? Number(formatUnits(myBalance as bigint, 18)) : 0;
+
+  // ── Mint handler ──────────────────────────────────────────────────
+  async function handleMint() {
+    if (!address || !basketToken || !mintAmountWei || !quoteMintData) return;
+    setWorking(true);
+    setTxMsg("Approving stock tokens...");
+    try {
+      const [tokens, amounts] = quoteMintData as [Address[], bigint[]];
+      // Approve each underlying token
+      for (let i = 0; i < tokens.length; i++) {
+        if (amounts[i] === 0n) continue;
+        await writeContractAsync({
+          address: tokens[i],
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [BASKET_FACTORY_ADDRESS, amounts[i]],
+        });
+      }
+      setTxMsg("Minting basket tokens...");
+      const hash = await writeContractAsync({
+        address: BASKET_FACTORY_ADDRESS,
+        abi: BASKET_FACTORY_ABI,
+        functionName: "mint",
+        args: [basketToken, mintAmountWei],
+      });
+      setTxMsg(`Minted! Tx: ${hash.slice(0, 10)}...${hash.slice(-6)}`);
+      setMintAmount("");
+    } catch (e) {
+      console.error(e);
+      setTxMsg("Transaction failed. Check console.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  // ── Burn handler ──────────────────────────────────────────────────
+  async function handleBurn() {
+    if (!address || !basketToken || !burnAmount || parseFloat(burnAmount) <= 0) return;
+    const burnWei = parseUnits(burnAmount, 18);
+    setWorking(true);
+    setTxMsg("Approving basket token...");
+    try {
+      await writeContractAsync({
+        address: basketToken,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [BASKET_FACTORY_ADDRESS, burnWei],
+      });
+      setTxMsg("Burning basket tokens...");
+      const hash = await writeContractAsync({
+        address: BASKET_FACTORY_ADDRESS,
+        abi: BASKET_FACTORY_ABI,
+        functionName: "burn",
+        args: [basketToken, burnWei],
+      });
+      setTxMsg(`Redeemed! Tx: ${hash.slice(0, 10)}...${hash.slice(-6)}`);
+      setBurnAmount("");
+    } catch (e) {
+      console.error(e);
+      setTxMsg("Transaction failed. Check console.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-      <div className="flex items-start justify-between mb-2">
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-start justify-between p-4 pb-2">
         <div>
           <span className="text-sm font-bold text-white">{bName}</span>
           <span className="ml-2 text-xs text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded">
@@ -110,8 +206,10 @@ function BasketCard({ basketId }: { basketId: number }) {
           </div>
         )}
       </div>
+
+      {/* Composition pills */}
       {compTokens.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap mb-3">
+        <div className="flex gap-1.5 flex-wrap px-4 pb-2">
           {compTokens.map((t, i) => {
             const ticker = TICKER_BY_ADDR[t.toLowerCase()] || t.slice(0, 6);
             const pct = compWeights[i] ? Number(compWeights[i]) / 100 : 0;
@@ -123,9 +221,139 @@ function BasketCard({ basketId }: { basketId: number }) {
           })}
         </div>
       )}
-      <div className="flex justify-between text-xs text-zinc-600">
-        <span className="font-mono">{basketToken.slice(0, 10)}...{basketToken.slice(-6)}</span>
-        <span>Supply: {totalSupply ? (Number(totalSupply as bigint) / 1e18).toFixed(2) : "0"}</span>
+
+      {/* Stats row */}
+      <div className="flex justify-between text-xs text-zinc-600 px-4 pb-3">
+        <span className="font-mono">{basketToken!.slice(0, 10)}...{basketToken!.slice(-6)}</span>
+        <div className="flex gap-4">
+          <span>Supply: {totalSupply ? (Number(totalSupply as bigint) / 1e18).toFixed(2) : "0"}</span>
+          {myBalanceNum > 0 && (
+            <span className="text-emerald-500">You: {myBalanceNum.toFixed(4)}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-t border-white/5">
+        {(["info", "mint", "burn"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => { setTab(t); setTxMsg(null); }}
+            className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              tab === t
+                ? "bg-white/[0.04] text-white border-b border-emerald-500"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            {t === "info" ? "Info" : t === "mint" ? "Mint" : "Burn"}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="p-4 min-h-[80px]">
+        {tab === "info" && (
+          <div className="text-xs text-zinc-500 space-y-1">
+            <div className="flex justify-between">
+              <span>1 {symbol} token =</span>
+              <span className="text-zinc-300">proportional stock holdings</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Mint by depositing</span>
+              <span className="text-zinc-300">underlying stock tokens</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Burn to redeem</span>
+              <span className="text-zinc-300">underlying stocks pro-rata</span>
+            </div>
+          </div>
+        )}
+
+        {tab === "mint" && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">Basket tokens to mint</label>
+              <input
+                type="number"
+                value={mintAmount}
+                onChange={(e) => { setMintAmount(e.target.value); setTxMsg(null); }}
+                placeholder="e.g. 1"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none"
+              />
+            </div>
+
+            {/* Quote preview */}
+            {quoteMintData && (
+              <div className="rounded-lg bg-white/[0.03] p-2.5 text-xs space-y-1">
+                <div className="text-zinc-500 mb-1">Required deposits:</div>
+                {(quoteMintData as [Address[], bigint[]])[0].map((tok, i) => {
+                  const ticker = TICKER_BY_ADDR[tok.toLowerCase()] || tok.slice(0, 6);
+                  const amt = (quoteMintData as [Address[], bigint[]])[1][i];
+                  return (
+                    <div key={i} className="flex justify-between text-zinc-300">
+                      <span>{ticker}</span>
+                      <span className="font-mono">{Number(formatUnits(amt, 18)).toFixed(4)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {txMsg && (
+              <div className={`text-xs rounded px-2 py-1.5 ${txMsg.includes("failed") ? "text-red-400 bg-red-500/10" : "text-emerald-400 bg-emerald-500/10"}`}>
+                {txMsg}
+              </div>
+            )}
+
+            <Button
+              onClick={handleMint}
+              disabled={!address || !mintAmount || parseFloat(mintAmount) <= 0 || working}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white border-0 text-xs py-2 h-auto"
+            >
+              {working ? txMsg || "Working..." : address ? `Mint ${symbol}` : "Connect Wallet"}
+            </Button>
+          </div>
+        )}
+
+        {tab === "burn" && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Basket tokens to burn
+                {myBalanceNum > 0 && (
+                  <button
+                    onClick={() => setBurnAmount(myBalanceNum.toString())}
+                    className="ml-2 text-emerald-400 hover:underline"
+                  >
+                    Max: {myBalanceNum.toFixed(4)}
+                  </button>
+                )}
+              </label>
+              <input
+                type="number"
+                value={burnAmount}
+                onChange={(e) => { setBurnAmount(e.target.value); setTxMsg(null); }}
+                placeholder="e.g. 1"
+                max={myBalanceNum}
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-zinc-600 focus:border-emerald-500/50 focus:outline-none"
+              />
+            </div>
+
+            {txMsg && (
+              <div className={`text-xs rounded px-2 py-1.5 ${txMsg.includes("failed") ? "text-red-400 bg-red-500/10" : "text-emerald-400 bg-emerald-500/10"}`}>
+                {txMsg}
+              </div>
+            )}
+
+            <Button
+              onClick={handleBurn}
+              disabled={!address || !burnAmount || parseFloat(burnAmount) <= 0 || working || parseFloat(burnAmount) > myBalanceNum}
+              className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 text-xs py-2 h-auto"
+            >
+              {working ? txMsg || "Working..." : address ? `Redeem ${symbol}` : "Connect Wallet"}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
