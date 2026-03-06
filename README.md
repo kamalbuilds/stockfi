@@ -133,13 +133,15 @@ npm start
 ## E2E Verification
 
 The full flow has been verified on-chain:
-1. Created 1 TSLA stop-loss at $300 (market at $350)
-2. Oracle price pushed to $295 (below stop)
+1. Created 1 TSLA stop-loss at $350 (market at $399)
+2. Oracle price pushed to $345 (below stop)
 3. `shouldTrigger()` returned true
-4. `executeStopLoss()` succeeded, user received guaranteed USDC at $300
-5. Insurance pool covered the $5/share gap
+4. `executeStopLoss()` succeeded, user received USDC at $350 (minus 0.5% fee)
+5. Insurance pool covered the $5/share gap, received TSLA tokens
+6. Pool stats updated: premiums tracked, gaps paid recorded
 
-Transaction: [`0xaa68047e...`](https://explorer.testnet.chain.robinhood.com/tx/0xaa68047ef062810f96dca9346ca09fefc4f36191b7f192bae8dbea774b4f0c8e)
+Create tx: [`0x8a75e1e8...`](https://explorer.testnet.chain.robinhood.com/tx/0x8a75e1e877e33591c528d7e7cda4e6d32da23ba251a6f4e38f8aac3263aed6c6)
+Execute tx: [`0xbd527a97...`](https://explorer.testnet.chain.robinhood.com/tx/0xbd527a9702440b25ecac3b0a8e8aaddb6e7add117e9e948b4c04cf13ea8ee9ff)
 
 ## Key Innovation
 
