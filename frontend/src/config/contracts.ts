@@ -4,6 +4,7 @@ import { type Address } from "viem";
 // Fill these in after running: forge script script/Deploy.s.sol --broadcast
 export const VAULT_ADDRESS = "0xfC524784E58bC565b6F28A09E8C7449487441ebc" as Address;
 export const INSURANCE_POOL_ADDRESS = "0xaC7681429000c66657a4c8e042f8A0C4a5f9C040" as Address;
+export const BASKET_FACTORY_ADDRESS = "0x362a50f9BA7db95B9d6915Ee5a8c95A09D886Bd3" as Address;
 
 // PriceOracle addresses (one per stock)
 export const ORACLES: Record<string, Address> = {

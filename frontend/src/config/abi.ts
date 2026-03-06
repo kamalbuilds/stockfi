@@ -232,3 +232,159 @@ export const ERC20_ABI = [
     outputs: [{ name: "", type: "uint8" }],
   },
 ] as const;
+
+export const BASKET_FACTORY_ABI = [
+  {
+    name: "createBasket",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "name", type: "string" },
+      { name: "symbol", type: "string" },
+      { name: "tokens", type: "address[]" },
+      { name: "weights", type: "uint256[]" },
+    ],
+    outputs: [
+      { name: "basketId", type: "uint256" },
+      { name: "basketToken", type: "address" },
+    ],
+  },
+  {
+    name: "mint",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "basketToken", type: "address" },
+      { name: "basketAmount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "burn",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "basketToken", type: "address" },
+      { name: "basketAmount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "basketCount",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "baskets",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [
+      { name: "basketToken", type: "address" },
+      { name: "creator", type: "address" },
+      { name: "name", type: "string" },
+      { name: "symbol", type: "string" },
+      { name: "createdAt", type: "uint256" },
+    ],
+  },
+  {
+    name: "quoteMint",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "basketToken", type: "address" },
+      { name: "basketAmount", type: "uint256" },
+    ],
+    outputs: [
+      { name: "tokens", type: "address[]" },
+      { name: "amounts", type: "uint256[]" },
+    ],
+  },
+  {
+    name: "getBasketsByCreator",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "creator", type: "address" }],
+    outputs: [{ name: "", type: "uint256[]" }],
+  },
+  {
+    name: "isBasketToken",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    name: "getBasketPrice",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "basketToken", type: "address" }],
+    outputs: [{ name: "price", type: "int256" }],
+  },
+  {
+    name: "BasketCreated",
+    type: "event",
+    inputs: [
+      { name: "basketId", type: "uint256", indexed: true },
+      { name: "basketToken", type: "address", indexed: true },
+      { name: "creator", type: "address", indexed: true },
+      { name: "name", type: "string", indexed: false },
+      { name: "symbol", type: "string", indexed: false },
+      { name: "tokens", type: "address[]", indexed: false },
+      { name: "weights", type: "uint256[]", indexed: false },
+    ],
+  },
+] as const;
+
+export const BASKET_TOKEN_ABI = [
+  {
+    name: "composition",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "tokens", type: "address[]" },
+      { name: "weights", type: "uint256[]" },
+    ],
+  },
+  {
+    name: "name",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "string" }],
+  },
+  {
+    name: "symbol",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "string" }],
+  },
+  {
+    name: "totalSupply",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "approve",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
