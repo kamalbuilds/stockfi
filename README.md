@@ -6,6 +6,8 @@ A pre-funded insurance pool pays you your stop price. One-click protection, simp
 
 Built for [Arbitrum Open House NYC](https://lu.ma/arbitrum-open-house-nyc) on Robinhood Chain (Arbitrum Orbit L3, chain 46630).
 
+**[Live Demo](https://stockforgeapp.vercel.app)** | **[GitHub](https://github.com/kamalbuilds/stockforge)** | **[Explorer](https://explorer.testnet.chain.robinhood.com)**
+
 ## The Problem
 
 Stop-loss orders don't protect your price. They become market orders after trigger. You set $270, you get $250 in a fast-moving market. Put options solve this but require options knowledge, have expiry dates, and aren't available for tokenized stock tokens.
