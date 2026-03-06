@@ -22,6 +22,7 @@ if (!PRIVATE_KEY) throw new Error("PRIVATE_KEY not set in .env");
 
 // Deployed contract addresses — fill after running Deploy.s.sol
 const VAULT_ADDRESS          = process.env.VAULT_ADDRESS          || "";
+const PRIVATE_SL_ADDRESS     = process.env.PRIVATE_SL_ADDRESS     || "";
 const TSLA_ORACLE_ADDRESS    = process.env.TSLA_ORACLE_ADDRESS    || "";
 const AMZN_ORACLE_ADDRESS    = process.env.AMZN_ORACLE_ADDRESS    || "";
 const PLTR_ORACLE_ADDRESS    = process.env.PLTR_ORACLE_ADDRESS    || "";
@@ -58,15 +59,26 @@ const STOP_LOSS_VAULT_ABI = [
   "event StopLossCancelled(bytes32 indexed positionId, address indexed owner, uint256 tokensReturned)",
 ];
 
+const PRIVATE_STOP_LOSS_ABI = [
+  "function shouldTrigger(bytes32 positionId) external view returns (bool)",
+  "function executeStopLoss(bytes32 positionId) external",
+  "event StopCommitted(bytes32 indexed positionId, address indexed owner, string ticker, address stockToken, uint256 amount, bytes32 commitHash, uint256 premiumPaid, uint256 revealDeadline)",
+  "event StopRevealed(bytes32 indexed positionId, address indexed owner, uint256 stopPrice)",
+  "event StopExecuted(bytes32 indexed positionId, address indexed owner, uint256 marketPrice, uint256 guaranteedPrice, uint256 gapCovered, uint256 usdcPaidToUser)",
+  "event StopCancelled(bytes32 indexed positionId, address indexed owner, uint256 tokensReturned)",
+];
+
 // ─── State ───────────────────────────────────────────────────────────────────
 
 let provider;
 let signer;
 let vault;
+let privateSL;
 const oracleContracts = {};
 
 // Track known active position IDs (populated from events)
 const activePositions = new Set();
+const activePrivatePositions = new Set();
 
 // ─── Price fetching (Yahoo Finance unofficial JSON) ───────────────────────────
 
@@ -184,6 +196,61 @@ async function checkAndExecuteTriggers() {
   }
 }
 
+// ─── Private stop-loss: load revealed positions ──────────────────────────────
+
+async function loadRevealedPrivatePositions() {
+  if (!privateSL) return;
+  try {
+    const currentBlock = await provider.getBlockNumber();
+    const fromBlock = Math.max(0, currentBlock - 10000);
+    // Only revealed positions can be triggered
+    const revealFilter = privateSL.filters.StopRevealed();
+    const revealEvents = await privateSL.queryFilter(revealFilter, fromBlock, "latest");
+    for (const ev of revealEvents) {
+      activePrivatePositions.add(ev.args.positionId);
+    }
+    // Remove executed
+    const execFilter = privateSL.filters.StopExecuted();
+    const execEvents = await privateSL.queryFilter(execFilter, fromBlock, "latest");
+    for (const ev of execEvents) {
+      activePrivatePositions.delete(ev.args.positionId);
+    }
+    // Remove cancelled
+    const cancelFilter = privateSL.filters.StopCancelled();
+    const cancelEvents = await privateSL.queryFilter(cancelFilter, fromBlock, "latest");
+    for (const ev of cancelEvents) {
+      activePrivatePositions.delete(ev.args.positionId);
+    }
+    console.log(`[private] Loaded ${activePrivatePositions.size} revealed private positions`);
+  } catch (err) {
+    console.error("[private] Failed to load:", err.message);
+  }
+}
+
+async function checkAndExecutePrivateTriggers() {
+  if (activePrivatePositions.size === 0) return;
+  console.log(`[private-triggers] Checking ${activePrivatePositions.size} private positions...`);
+
+  for (const positionId of activePrivatePositions) {
+    try {
+      const shouldExec = await privateSL.shouldTrigger(positionId);
+      if (!shouldExec) continue;
+
+      console.log(`  [PRIVATE-TRIGGER] Position ${positionId} triggered! Executing...`);
+      const tx = await privateSL.executeStopLoss(positionId);
+      const receipt = await tx.wait();
+      console.log(`  [PRIVATE-EXECUTED] tx: ${tx.hash} (block ${receipt.blockNumber})`);
+      activePrivatePositions.delete(positionId);
+    } catch (err) {
+      if (err.message.includes("not revealed") || err.message.includes("cannot cancel")) {
+        activePrivatePositions.delete(positionId);
+      } else {
+        console.error(`  [err] Private execute failed ${positionId}:`, err.message);
+      }
+    }
+  }
+}
+
 // ─── Event listener: track new positions in real time ────────────────────────
 
 function listenForNewPositions() {
@@ -201,6 +268,23 @@ function listenForNewPositions() {
     activePositions.delete(positionId);
   });
   console.log("[events] Listening for StopLoss events...");
+}
+
+function listenForPrivatePositions() {
+  if (!privateSL) return;
+  privateSL.on("StopRevealed", (positionId, owner, stopPrice) => {
+    console.log(`[event] Private stop revealed: positionId=${positionId} owner=${owner} stop=$${Number(stopPrice) / 1e8}`);
+    activePrivatePositions.add(positionId);
+  });
+  privateSL.on("StopExecuted", (positionId) => {
+    console.log(`[event] Private stop executed: positionId=${positionId}`);
+    activePrivatePositions.delete(positionId);
+  });
+  privateSL.on("StopCancelled", (positionId) => {
+    console.log(`[event] Private stop cancelled: positionId=${positionId}`);
+    activePrivatePositions.delete(positionId);
+  });
+  console.log("[events] Listening for Private StopLoss events...");
 }
 
 // ─── Main loop ───────────────────────────────────────────────────────────────
@@ -232,6 +316,15 @@ async function main() {
     console.warn("[warn] VAULT_ADDRESS not set — stop-loss execution disabled");
   }
 
+  // Init private stop-loss
+  if (PRIVATE_SL_ADDRESS) {
+    privateSL = new ethers.Contract(PRIVATE_SL_ADDRESS, PRIVATE_STOP_LOSS_ABI, signer);
+    await loadRevealedPrivatePositions();
+    listenForPrivatePositions();
+  } else {
+    console.warn("[warn] PRIVATE_SL_ADDRESS not set — private stop-loss execution disabled");
+  }
+
   // Initial price push
   await updateOracles();
 
@@ -240,8 +333,9 @@ async function main() {
   setInterval(async () => {
     cycle++;
     await updateOracles();
-    if (VAULT_ADDRESS && cycle % TRIGGER_CHECK_EVERY === 0) {
-      await checkAndExecuteTriggers();
+    if (cycle % TRIGGER_CHECK_EVERY === 0) {
+      if (VAULT_ADDRESS) await checkAndExecuteTriggers();
+      if (PRIVATE_SL_ADDRESS) await checkAndExecutePrivateTriggers();
     }
   }, UPDATE_INTERVAL_MS);
 
