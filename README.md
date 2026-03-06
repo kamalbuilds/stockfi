@@ -91,7 +91,7 @@ User deposits TSLA + pays 2% premium
 
 ## Tech Stack
 
-- **Contracts:** Solidity 0.8.24, Foundry (36 tests passing)
+- **Contracts:** Solidity 0.8.24, Foundry (45 tests passing)
 - **Frontend:** Next.js 16, wagmi v3, viem, TailwindCSS, shadcn/ui
 - **Bot:** Node.js, ethers.js v6, Yahoo Finance real-time prices
 - **Chain:** Robinhood Chain Testnet (Arbitrum Orbit L3, chain 46630)
@@ -109,7 +109,7 @@ stockforge/
       PriceOracle.sol        # Chainlink AggregatorV3 compatible
       MockUSDC.sol           # Testnet mintable USDC
     test/
-      StopLossVault.t.sol    # 21 stop-loss tests
+      StopLossVault.t.sol    # 30 stop-loss tests
       BasketFactory.t.sol    # 15 basket tests
     script/
       Deploy.s.sol           # Full deployment script
@@ -124,7 +124,7 @@ stockforge/
 ```bash
 cd contracts
 forge build
-forge test  # 21/21 tests
+forge test  # 45/45 tests
 ```
 
 ### Frontend
