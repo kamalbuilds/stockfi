@@ -1,9 +1,64 @@
 "use client";
 
 import Link from "next/link";
+import { useReadContracts, useReadContract } from "wagmi";
 import { Button } from "@/components/ui/button";
+import {
+  VAULT_ADDRESS,
+  INSURANCE_POOL_ADDRESS,
+  BASKET_FACTORY_ADDRESS,
+  ORACLES,
+} from "@/config/contracts";
+import { STOP_LOSS_VAULT_ABI, GAP_INSURANCE_POOL_ABI, BASKET_FACTORY_ABI, PRICE_ORACLE_ABI } from "@/config/abi";
 
 export default function Home() {
+  const { data: vaultStats } = useReadContract({
+    address: VAULT_ADDRESS,
+    abi: STOP_LOSS_VAULT_ABI,
+    functionName: "getStats",
+    query: { enabled: !!VAULT_ADDRESS },
+  });
+
+  const { data: poolStats } = useReadContract({
+    address: INSURANCE_POOL_ADDRESS,
+    abi: GAP_INSURANCE_POOL_ABI,
+    functionName: "getStats",
+    query: { enabled: !!INSURANCE_POOL_ADDRESS },
+  });
+
+  const { data: basketCount } = useReadContract({
+    address: BASKET_FACTORY_ADDRESS,
+    abi: BASKET_FACTORY_ABI,
+    functionName: "basketCount",
+    query: { enabled: !!BASKET_FACTORY_ADDRESS },
+  });
+
+  const oraclePrices = useReadContracts({
+    contracts: Object.entries(ORACLES).map(([, addr]) => ({
+      address: addr,
+      abi: PRICE_ORACLE_ABI,
+      functionName: "latestPrice" as const,
+    })),
+    query: { enabled: true, refetchInterval: 30_000 },
+  });
+
+  const tickers = Object.keys(ORACLES);
+  const prices: Record<string, string> = {};
+  if (oraclePrices.data) {
+    tickers.forEach((t, i) => {
+      const result = oraclePrices.data?.[i];
+      if (result?.status === "success" && result.result) {
+        prices[t] = (Number(result.result as bigint) / 1e8).toFixed(2);
+      }
+    });
+  }
+
+  const totalPositions = vaultStats ? Number((vaultStats as [bigint, bigint, bigint])[0]) : 0;
+  const totalExecuted = vaultStats ? Number((vaultStats as [bigint, bigint, bigint])[1]) : 0;
+  const poolBalance = poolStats ? (Number((poolStats as [bigint, bigint, bigint, bigint, bigint])[1]) / 1e6).toFixed(0) : "0";
+  const premiums = poolStats ? (Number((poolStats as [bigint, bigint, bigint, bigint, bigint])[2]) / 1e6).toFixed(2) : "0";
+  const baskets = basketCount ? Number(basketCount as bigint) : 0;
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -42,6 +97,24 @@ export default function Home() {
               </Button>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Live Protocol Stats */}
+      <section className="mx-auto max-w-5xl px-4 pb-16">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: "Stop-Losses", value: totalPositions.toString() },
+            { label: "Executed", value: totalExecuted.toString() },
+            { label: "Pool Balance", value: `$${Number(poolBalance).toLocaleString()}` },
+            { label: "Premiums Earned", value: `$${premiums}` },
+            { label: "Baskets Created", value: baskets.toString() },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center">
+              <div className="text-xl font-bold text-emerald-400">{stat.value}</div>
+              <div className="text-xs text-zinc-500 mt-1">{stat.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -149,21 +222,24 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Supported Stocks */}
+      {/* Supported Stocks with Live Prices */}
       <section className="mx-auto max-w-5xl px-4 pb-24">
-        <h2 className="mb-8 text-center text-2xl font-bold">Supported Stocks</h2>
+        <h2 className="mb-8 text-center text-2xl font-bold">Live Stock Prices</h2>
         <div className="flex flex-wrap justify-center gap-3">
           {["TSLA", "AMZN", "PLTR", "NFLX", "AMD"].map((ticker) => (
             <div
               key={ticker}
-              className="rounded-lg border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white"
+              className="rounded-lg border border-white/10 bg-white/5 px-6 py-3 flex items-center gap-3"
             >
-              {ticker}
+              <span className="text-sm font-semibold text-white">{ticker}</span>
+              <span className="text-sm font-mono text-emerald-400">
+                {prices[ticker] ? `$${prices[ticker]}` : "..."}
+              </span>
             </div>
           ))}
         </div>
         <p className="mt-4 text-center text-sm text-zinc-500">
-          Tokenized stocks on Robinhood Chain Testnet (chain 46630)
+          Real-time prices via Yahoo Finance, pushed to on-chain oracles every 30s
         </p>
       </section>
     </div>
