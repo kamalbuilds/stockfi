@@ -224,7 +224,7 @@ function PositionCard({ positionId }: { positionId: `0x${string}` }) {
   const dist = distPct ? Number(distPct as bigint) : 0;
 
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5">
+    <Link href={`/position?id=${positionId}`} className="block rounded-xl border border-white/5 bg-white/[0.02] p-5 hover:border-emerald-500/30 transition-colors cursor-pointer">
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -275,6 +275,6 @@ function PositionCard({ positionId }: { positionId: `0x${string}` }) {
       <div className="mt-3 text-xs text-zinc-600 font-mono">
         {positionId.slice(0, 10)}...{positionId.slice(-8)}
       </div>
-    </div>
+    </Link>
   );
 }
