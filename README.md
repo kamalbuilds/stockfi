@@ -142,16 +142,18 @@ npm start
 
 ## E2E Verification
 
-The full flow has been verified on-chain:
-1. Created 1 TSLA stop-loss at $350 (market at $399)
-2. Oracle price pushed to $345 (below stop)
-3. `shouldTrigger()` returned true
-4. `executeStopLoss()` succeeded, user received USDC at $350 (minus 0.5% fee)
-5. Insurance pool covered the $5/share gap, received TSLA tokens
-6. Pool stats updated: premiums tracked, gaps paid recorded
+The full flow has been verified on-chain (latest deployment):
+1. Created AMZN stop-loss at $200 (market at $214.92)
+2. Created PLTR stop-loss at $140 (market at $159.51)
+3. Oracle price pushed to $195 (below AMZN stop)
+4. `shouldTrigger()` returned true
+5. `executeStopLoss()` succeeded, user received USDC at $200 guaranteed price
+6. Insurance pool covered the $5/share gap ($195 market vs $200 guaranteed)
+7. Pool stats: $26.64 premiums earned, $5.47 gaps covered
 
-Create tx: [`0x8a75e1e8...`](https://explorer.testnet.chain.robinhood.com/tx/0x8a75e1e877e33591c528d7e7cda4e6d32da23ba251a6f4e38f8aac3263aed6c6)
-Execute tx: [`0xbd527a97...`](https://explorer.testnet.chain.robinhood.com/tx/0xbd527a9702440b25ecac3b0a8e8aaddb6e7add117e9e948b4c04cf13ea8ee9ff)
+Create AMZN tx: [`0x77ad75c9...`](https://explorer.testnet.chain.robinhood.com/tx/0x77ad75c90b579782ce96073ad427caa3ec957f0bf16eb4ff3fe701e25defddff)
+Create PLTR tx: [`0xae26710c...`](https://explorer.testnet.chain.robinhood.com/tx/0xae26710cab1c77680c4d2ed7b9d3403d7cebd3b696876e949a20d1cd0165da1c)
+Execute AMZN tx: [`0x6a65b064...`](https://explorer.testnet.chain.robinhood.com/tx/0x6a65b0649a00b6a8c6377e9769768695ef64da0f36a8ce7c0918d619d15b92b5)
 
 ## Key Innovation
 

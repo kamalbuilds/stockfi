@@ -170,6 +170,7 @@ contract StopLossVault {
         uint256 premium = (positionValueUsd8 * PREMIUM_BPS) / 10_000;
         // Convert from 8-dec to 6-dec USDC
         uint256 premiumUsdc = premium / 100; // 8 dec -> 6 dec
+        require(premiumUsdc > 0, "StopLossVault: position too small for insurance");
 
         // Transfer stock tokens into this vault
         _transferFrom(stockToken, msg.sender, address(this), amount);
