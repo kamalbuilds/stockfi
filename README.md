@@ -14,7 +14,13 @@ Robinhood Chain has tokenized stocks (TSLA, AMZN, PLTR, NFLX, AMD) as ERC-20s, b
 
 ## The Solution
 
-StockForge is a two-sided insurance market. Users pay a 2% premium for price-guaranteed stop-losses. Insurance providers (LPs) deposit USDC, earn premiums, and take the other side of downside risk. When a stop triggers, the pool pays the user at the exact stop price, regardless of where the market is.
+StockForge is the DeFi composability layer for tokenized stocks. Two primitives:
+
+**1. Permissionless Stock Baskets (EIP-7621 inspired)**
+Create custom stock indexes in one transaction. `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`. The basket is an ERC-20 backed by real stock tokens. Mint by depositing proportional tokens, burn to redeem. In TradFi, creating an ETF costs $250K+ and requires SEC approval. On StockForge: one transaction.
+
+**2. Insurance-Backed Stop-Losses**
+Users pay a 2% premium for price-guaranteed stop-losses. Insurance providers (LPs) deposit USDC, earn premiums, and take the other side of downside risk. When a stop triggers, the pool pays the user at the exact stop price, regardless of where the market is.
 
 **What makes this different from perp DEX stop-losses (dYdX, GMX):**
 - Those trade synthetic perps. StockForge protects **real tokenized stock tokens** (TSLA, AMZN ERC-20s)
@@ -77,12 +83,14 @@ User deposits TSLA + pays 2% premium
 | PLTR Oracle | `0xcd8D3bFb6757504896a9320Dcb451e20d4baa74B` |
 | NFLX Oracle | `0x95B4b7d7a23d954BF92FeDF2e00A374E22208D69` |
 | AMD Oracle | `0xafA4230B7154d95F1c8Bc13AD443b2e50bde7C57` |
+| BasketFactory | `0x362a50f9BA7db95B9d6915Ee5a8c95A09D886Bd3` |
+| KTECH Basket Token | `0xabfa7964b423c419a5f66cf61b65611de8c85aac` |
 
 **Explorer:** [Blockscout](https://explorer.testnet.chain.robinhood.com)
 
 ## Tech Stack
 
-- **Contracts:** Solidity 0.8.24, Foundry (21 tests passing)
+- **Contracts:** Solidity 0.8.24, Foundry (36 tests passing)
 - **Frontend:** Next.js 16, wagmi v3, viem, TailwindCSS, shadcn/ui
 - **Bot:** Node.js, ethers.js v6, Yahoo Finance real-time prices
 - **Chain:** Robinhood Chain Testnet (Arbitrum Orbit L3, chain 46630)
@@ -93,12 +101,15 @@ User deposits TSLA + pays 2% premium
 stockforge/
   contracts/
     src/
-      StopLossVault.sol      # Core gap-proof stop-loss vault
+      StopLossVault.sol      # Insurance-backed stop-loss vault
       GapInsurancePool.sol   # Two-sided insurance market
+      BasketFactory.sol      # Permissionless stock index creation
+      BasketToken.sol        # ERC-20 basket token (EIP-7621 inspired)
       PriceOracle.sol        # Chainlink AggregatorV3 compatible
       MockUSDC.sol           # Testnet mintable USDC
     test/
-      StopLossVault.t.sol    # 21 comprehensive tests
+      StopLossVault.t.sol    # 21 stop-loss tests
+      BasketFactory.t.sol    # 15 basket tests
     script/
       Deploy.s.sol           # Full deployment script
   frontend/                  # Next.js 16 + wagmi + shadcn
@@ -145,13 +156,21 @@ Execute tx: [`0xbd527a97...`](https://explorer.testnet.chain.robinhood.com/tx/0x
 
 ## Key Innovation
 
-StockForge is the **first permissionless insurance market for tokenized stock downside protection**.
+StockForge treats tokenized stocks as **composable DeFi primitives** for the first time.
 
-- **For users:** One-click protection simpler than options, with no expiry. Pay 2%, get price-guaranteed exits.
-- **For LPs:** Earn premiums by underwriting gap risk. Receive discounted stock tokens on execution (buy-the-dip exposure).
-- **For the ecosystem:** A new DeFi primitive native to Robinhood Chain's tokenized equities. Composable, permissionless, and built for retail.
+**Permissionless Stock Indexes (BasketFactory)**
+- Create custom stock baskets as ERC-20 tokens in one transaction
+- Inspired by EIP-7621 (Basket Token Standard)
+- Weighted price computed from underlying Chainlink-compatible oracles
+- In TradFi: creating an ETF costs $250K+ and requires SEC approval. On StockForge: free, instant, permissionless.
+- Demo: KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD. Live on RH Chain with weighted price $275.24.
 
-The two-sided flywheel: more users = more premiums for LPs. More LPs = more capacity for users. Insurance pools are a proven DeFi primitive (Nexus Mutual, InsurAce) but nobody has applied them to tokenized stock downside protection.
+**Insurance-Backed Stop-Losses**
+- Two-sided insurance market: users pay 2% premium, LPs earn yield by underwriting risk
+- Pre-funded pool guarantees execution at stop price regardless of market gaps
+- Composable: basket tokens themselves can be protected with stop-losses
+
+**Composability stack:** Create an index. Insure it. In two transactions. This is only possible because stock tokens are ERC-20s on a programmable blockchain.
 
 ## FAQ
 

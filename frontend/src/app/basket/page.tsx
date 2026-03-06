@@ -10,7 +10,7 @@ import {
   STOCK_TOKENS,
   SUPPORTED_STOCKS,
 } from "@/config/contracts";
-import { BASKET_FACTORY_ABI, ERC20_ABI } from "@/config/abi";
+import { BASKET_FACTORY_ABI, BASKET_TOKEN_ABI, ERC20_ABI } from "@/config/abi";
 
 // Stock weight slider row
 function StockWeightRow({
@@ -52,6 +52,33 @@ function BasketCard({ basketId }: { basketId: number }) {
 
   const [basketToken, creator, bName, symbol] = basketInfo as [Address, Address, string, string, bigint];
 
+  const { data: basketPrice } = useReadContract({
+    address: BASKET_FACTORY_ADDRESS,
+    abi: BASKET_FACTORY_ABI,
+    functionName: "getBasketPrice",
+    args: [basketToken],
+    query: { enabled: !!basketToken },
+  });
+
+  const { data: totalSupply } = useReadContract({
+    address: basketToken,
+    abi: BASKET_TOKEN_ABI,
+    functionName: "totalSupply",
+    query: { enabled: !!basketToken },
+  });
+
+  const { data: composition } = useReadContract({
+    address: basketToken,
+    abi: BASKET_TOKEN_ABI,
+    functionName: "composition",
+    query: { enabled: !!basketToken },
+  });
+
+  const TICKER_BY_ADDR: Record<string, string> = {};
+  for (const [t, a] of Object.entries(STOCK_TOKENS)) TICKER_BY_ADDR[a.toLowerCase()] = t;
+
+  const [compTokens, compWeights] = (composition || [[], []]) as [string[], bigint[]];
+
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
       <div className="flex items-start justify-between mb-2">
@@ -61,13 +88,32 @@ function BasketCard({ basketId }: { basketId: number }) {
             {symbol}
           </span>
         </div>
+        {basketPrice && (
+          <div className="text-right">
+            <div className="text-lg font-bold text-emerald-400">
+              ${(Number(basketPrice as bigint) / 1e8).toFixed(2)}
+            </div>
+            <div className="text-[10px] text-zinc-600">weighted price</div>
+          </div>
+        )}
       </div>
-      <p className="text-xs text-zinc-600 mb-3 font-mono">
-        {basketToken.slice(0, 10)}...{basketToken.slice(-6)}
-      </p>
-      <p className="text-xs text-zinc-500">
-        Created by: {creator.slice(0, 8)}...{creator.slice(-6)}
-      </p>
+      {compTokens.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {compTokens.map((t, i) => {
+            const ticker = TICKER_BY_ADDR[t.toLowerCase()] || t.slice(0, 6);
+            const pct = compWeights[i] ? Number(compWeights[i]) / 100 : 0;
+            return (
+              <span key={i} className="text-[11px] bg-white/5 border border-white/10 rounded px-2 py-0.5 text-zinc-300">
+                {pct}% {ticker}
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div className="flex justify-between text-xs text-zinc-600">
+        <span className="font-mono">{basketToken.slice(0, 10)}...{basketToken.slice(-6)}</span>
+        <span>Supply: {totalSupply ? (Number(totalSupply as bigint) / 1e18).toFixed(2) : "0"}</span>
+      </div>
     </div>
   );
 }
