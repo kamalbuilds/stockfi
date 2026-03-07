@@ -1,6 +1,8 @@
 # StockFi: The DeFi Composability Layer for Tokenized Stocks
 
-**Six composable financial primitives for tokenized equities. Baskets, insurance, options, privacy. All permissionless. All on Robinhood Chain.**
+**6 composable financial primitives for tokenized equities.**
+
+Baskets, insurance, options, privacy. All permissionless. All on Robinhood Chain.**
 
 Create stock indexes in one transaction. Protect them with insurance-backed stop-losses. Earn yield by writing covered calls. Hide your stops from front-runners. This is the Bloomberg Terminal of on-chain stocks.
 
