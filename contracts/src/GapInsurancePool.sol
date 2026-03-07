@@ -50,6 +50,9 @@ contract GapInsurancePool {
     // Pending premiums not yet distributed
     uint256 public pendingPremiums;
 
+    /// @dev Minimum time LPs must wait after deposit before withdrawing (prevents bank runs)
+    uint256 public constant WITHDRAWAL_DELAY = 1 days;
+
     // ═══════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════
@@ -133,6 +136,10 @@ contract GapInsurancePool {
         ProviderInfo storage info = providers[msg.sender];
         require(info.sharesHeld >= shareAmount, "GapInsurancePool: insufficient shares");
         require(totalShares > 0, "GapInsurancePool: no shares");
+        require(
+            block.timestamp >= info.depositedAt + WITHDRAWAL_DELAY,
+            "GapInsurancePool: withdrawal locked"
+        );
 
         // USDC owed = shareAmount / totalShares * poolBalance
         uint256 currentBalance = _usdcBalance();

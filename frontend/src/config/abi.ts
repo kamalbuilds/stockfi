@@ -17,6 +17,7 @@ export const STOP_LOSS_VAULT_ABI = [
           { name: "priceOracle", type: "address" },
           { name: "status", type: "uint8" },
           { name: "createdAt", type: "uint256" },
+          { name: "expiresAt", type: "uint256" },
           { name: "executedAt", type: "uint256" },
           { name: "marketPriceAtExecution", type: "uint256" },
         ],
@@ -53,6 +54,7 @@ export const STOP_LOSS_VAULT_ABI = [
       { name: "_totalPositions", type: "uint256" },
       { name: "_totalExecuted", type: "uint256" },
       { name: "_totalProtectedUsd", type: "uint256" },
+      { name: "_totalActiveExposure", type: "uint256" },
     ],
   },
   {

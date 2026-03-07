@@ -22,7 +22,7 @@ StockForge is the DeFi composability layer for tokenized stocks. Six primitives 
 Create custom stock indexes in one transaction. `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`. In TradFi, creating an ETF costs $250K+ and requires SEC approval. On StockForge: one click.
 
 **2. Insurance-Backed Stop-Losses**
-Pay a 2% premium, get a price-guaranteed exit. A pre-funded pool absorbs gaps. Unlike dYdX/GMX stop-losses that execute at market price, StockForge pays your exact stop price.
+Pay a 2% premium, get a price-guaranteed exit. A pre-funded pool absorbs gaps. Unlike dYdX/GMX stop-losses that execute at market price, StockForge pays your stop price (minus a 0.5% execution fee).
 
 **3. Covered Call Options**
 First permissionless covered call market for tokenized stocks. Writers deposit stock tokens and earn premium yield. Buyers get leveraged upside exposure. In TradFi, this requires options approval and a broker. Here: one transaction.

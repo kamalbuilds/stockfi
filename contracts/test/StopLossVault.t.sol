@@ -314,6 +314,9 @@ contract StopLossVaultTest is Test {
     }
 
     function test_poolWithdraw() public {
+        // Advance past withdrawal delay (1 day)
+        vm.warp(block.timestamp + 1 days + 1);
+
         uint256 balBefore = usdc.balanceOf(lp);
         GapInsurancePool.ProviderInfo memory info = _getProviderInfo(lp);
 
@@ -323,6 +326,14 @@ contract StopLossVaultTest is Test {
         uint256 balAfter = usdc.balanceOf(lp);
         // LP gets back their deposit + any premiums that accumulated
         assertTrue(balAfter > balBefore);
+    }
+
+    function test_revertWithdrawBeforeDelay() public {
+        GapInsurancePool.ProviderInfo memory info = _getProviderInfo(lp);
+
+        vm.prank(lp);
+        vm.expectRevert("GapInsurancePool: withdrawal locked");
+        pool.withdraw(info.sharesHeld);
     }
 
     function test_poolReceivesPremiumOnCreate() public {
@@ -395,9 +406,71 @@ contract StopLossVaultTest is Test {
         vault.createStopLoss(address(tsla), "TSLA", 5 ether, 25000000000, address(oracle));
         vm.stopPrank();
 
-        (uint256 total, uint256 executed, ) = vault.getStats();
+        (uint256 total, uint256 executed, , uint256 activeExposure) = vault.getStats();
         assertEq(total, 1);
         assertEq(executed, 0);
+        // 5 TSLA * $250 stop = $1250 = 125000000000 (8 dec)
+        assertEq(activeExposure, 125000000000);
+    }
+
+    // ===== Expiry Tests =====
+
+    function test_expirePosition() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        uint256 tslaBefore = tsla.balanceOf(user);
+
+        // Warp past 30-day expiry
+        vm.warp(block.timestamp + 30 days + 1);
+
+        vault.expirePosition(positionId);
+
+        uint256 tslaAfter = tsla.balanceOf(user);
+        assertEq(tslaAfter - tslaBefore, 5 ether);
+
+        StopLossVault.StopLossPosition memory pos = vault.getPosition(positionId);
+        assertTrue(pos.status == StopLossVault.StopLossStatus.CANCELLED);
+
+        // Active exposure should be 0
+        (, , , uint256 activeExposure) = vault.getStats();
+        assertEq(activeExposure, 0);
+    }
+
+    function test_revertExpireBeforeExpiry() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        vm.expectRevert("StopLossVault: not expired");
+        vault.expirePosition(positionId);
+    }
+
+    function test_revertExecuteExpiredPosition() public {
+        vm.startPrank(user);
+        tsla.approve(address(vault), type(uint256).max);
+        usdc.approve(address(vault), type(uint256).max);
+        bytes32 positionId = vault.createStopLoss(
+            address(tsla), "TSLA", 5 ether, 25000000000, address(oracle)
+        );
+        vm.stopPrank();
+
+        // Warp past expiry
+        vm.warp(block.timestamp + 30 days + 1);
+        oracle.forceUpdatePrice(24000000000);
+
+        vm.prank(bot);
+        vm.expectRevert("StopLossVault: position expired");
+        vault.executeStopLoss(positionId);
     }
 
     // ===== Cooldown Tests =====

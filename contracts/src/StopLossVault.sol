@@ -30,6 +30,7 @@ contract StopLossVault {
         address priceOracle;    // PriceOracle for this stock
         StopLossStatus status;
         uint256 createdAt;
+        uint256 expiresAt;             // Position expires after MAX_POSITION_DURATION
         uint256 executedAt;
         uint256 marketPriceAtExecution; // Actual price when stop triggered (may be below stopPrice)
     }
@@ -57,9 +58,15 @@ contract StopLossVault {
     /// @dev 0.5% execution fee taken from payout — same as Guardian rescue fee
     uint256 public constant EXECUTION_FEE_BPS = 50;
 
+    /// @dev Maximum position duration before it expires (30 days)
+    uint256 public constant MAX_POSITION_DURATION = 30 days;
+
     /// @dev Cooldown prevents duplicate execution attempts during bot retry loops
     uint256 public constant EXECUTION_COOLDOWN = 120; // 2 minutes
     mapping(bytes32 => uint256) public lastExecutionAttempt;
+
+    /// @dev Total guaranteed USD value of all ACTIVE positions (8 decimals)
+    uint256 public totalActiveExposure;
 
     // ═══════════════════════════════════════════════════════════════
     // EVENTS
@@ -86,6 +93,12 @@ contract StopLossVault {
     );
 
     event StopLossCancelled(
+        bytes32 indexed positionId,
+        address indexed owner,
+        uint256 tokensReturned
+    );
+
+    event StopLossExpired(
         bytes32 indexed positionId,
         address indexed owner,
         uint256 tokensReturned
@@ -200,12 +213,17 @@ contract StopLossVault {
             priceOracle: priceOracle,
             status: StopLossStatus.ACTIVE,
             createdAt: block.timestamp,
+            expiresAt: block.timestamp + MAX_POSITION_DURATION,
             executedAt: 0,
             marketPriceAtExecution: 0
         });
 
         userPositions[msg.sender].push(positionId);
         totalPositions++;
+
+        // Track active exposure for solvency monitoring
+        uint256 guaranteedValue8 = (amount * stopPrice) / 1e18;
+        totalActiveExposure += guaranteedValue8;
 
         emit StopLossCreated(positionId, msg.sender, ticker, stockToken, amount, stopPrice, premiumUsdc);
     }
@@ -222,6 +240,7 @@ contract StopLossVault {
     function executeStopLoss(bytes32 positionId) external onlyBot {
         StopLossPosition storage pos = positions[positionId];
         require(pos.status == StopLossStatus.ACTIVE, "StopLossVault: not active");
+        require(block.timestamp <= pos.expiresAt, "StopLossVault: position expired");
         require(
             lastExecutionAttempt[positionId] == 0 ||
             block.timestamp - lastExecutionAttempt[positionId] > EXECUTION_COOLDOWN,
@@ -260,6 +279,10 @@ contract StopLossVault {
 
         totalExecuted++;
         totalProtectedUsd += guaranteedPayout8;
+
+        // Decrease active exposure
+        uint256 posExposure8 = (pos.amount * pos.stopPrice) / 1e18;
+        totalActiveExposure = totalActiveExposure > posExposure8 ? totalActiveExposure - posExposure8 : 0;
 
         // Send USDC from insurance pool to user (pool pre-approved this contract)
         if (netPayoutUsdc > 0) {
@@ -308,9 +331,31 @@ contract StopLossVault {
         require(pos.status == StopLossStatus.ACTIVE, "StopLossVault: not active");
 
         pos.status = StopLossStatus.CANCELLED;
+
+        // Decrease active exposure
+        uint256 posExposure8 = (pos.amount * pos.stopPrice) / 1e18;
+        totalActiveExposure = totalActiveExposure > posExposure8 ? totalActiveExposure - posExposure8 : 0;
+
         _transfer(pos.stockToken, msg.sender, pos.amount);
 
         emit StopLossCancelled(positionId, msg.sender, pos.amount);
+    }
+
+    /// @notice Expire a position past its duration. Returns stock tokens to owner.
+    ///         Can be called by anyone (bot or position owner).
+    function expirePosition(bytes32 positionId) external {
+        StopLossPosition storage pos = positions[positionId];
+        require(pos.status == StopLossStatus.ACTIVE, "StopLossVault: not active");
+        require(block.timestamp > pos.expiresAt, "StopLossVault: not expired");
+
+        pos.status = StopLossStatus.CANCELLED;
+
+        uint256 posExposure8 = (pos.amount * pos.stopPrice) / 1e18;
+        totalActiveExposure = totalActiveExposure > posExposure8 ? totalActiveExposure - posExposure8 : 0;
+
+        _transfer(pos.stockToken, pos.owner, pos.amount);
+
+        emit StopLossExpired(positionId, pos.owner, pos.amount);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -321,6 +366,7 @@ contract StopLossVault {
     function shouldTrigger(bytes32 positionId) external view returns (bool) {
         StopLossPosition memory pos = positions[positionId];
         if (pos.status != StopLossStatus.ACTIVE) return false;
+        if (block.timestamp > pos.expiresAt) return false;
         if (pos.priceOracle == address(0)) return false;
         (, int256 price, , uint256 updatedAt,) = IAggregatorV3(pos.priceOracle).latestRoundData();
         if (block.timestamp - updatedAt > 3600) return false; // stale
@@ -341,9 +387,10 @@ contract StopLossVault {
     function getStats() external view returns (
         uint256 _totalPositions,
         uint256 _totalExecuted,
-        uint256 _totalProtectedUsd
+        uint256 _totalProtectedUsd,
+        uint256 _totalActiveExposure
     ) {
-        return (totalPositions, totalExecuted, totalProtectedUsd);
+        return (totalPositions, totalExecuted, totalProtectedUsd, totalActiveExposure);
     }
 
     /// @notice Get distance to stop as percentage (100 = at stop, 120 = 20% above stop)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { useAccount, useReadContract, useReadContracts, useWriteContract } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { type Address } from "viem";
 import { Button } from "@/components/ui/button";
@@ -66,29 +66,41 @@ function BasketCard({ basketId }: { basketId: number }) {
     abi: BASKET_FACTORY_ABI,
     functionName: "getBasketPrice",
     args: basketToken ? [basketToken] : undefined,
-    query: { enabled: !!basketToken, retry: false },
+    query: { enabled: !!basketToken, retry: false, refetchInterval: 10_000 },
   });
 
-  const { data: totalSupply } = useReadContract({
+  const { data: totalSupply, refetch: refetchSupply } = useReadContract({
     address: basketToken,
     abi: BASKET_TOKEN_ABI,
     functionName: "totalSupply",
-    query: { enabled: !!basketToken, retry: false },
+    query: { enabled: !!basketToken, retry: false, refetchInterval: 10_000 },
   });
 
   const { data: composition } = useReadContract({
     address: basketToken,
     abi: BASKET_TOKEN_ABI,
     functionName: "composition",
-    query: { enabled: !!basketToken, retry: false },
+    query: { enabled: !!basketToken, retry: false, refetchInterval: 30_000 },
   });
 
-  const { data: myBalance } = useReadContract({
+  const { data: myBalance, refetch: refetchBalance } = useReadContract({
     address: basketToken,
     abi: BASKET_TOKEN_ABI,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!basketToken && !!address, retry: false, refetchInterval: 10_000 },
+    query: { enabled: !!basketToken && !!address, retry: false, refetchInterval: 5_000 },
+  });
+
+  // Read user's stock token balances for mint/burn info
+  const stockEntries = Object.entries(STOCK_TOKENS);
+  const { data: stockBalances } = useReadContracts({
+    contracts: stockEntries.map(([, addr]) => ({
+      address: addr as Address,
+      abi: ERC20_ABI,
+      functionName: "balanceOf" as const,
+      args: address ? [address] : undefined,
+    })),
+    query: { enabled: !!address, refetchInterval: 10_000 },
   });
 
   const mintAmountWei = mintAmount && parseFloat(mintAmount) > 0
@@ -149,6 +161,8 @@ function BasketCard({ basketId }: { basketId: number }) {
       });
       setTxMsg(`Minted! Tx: ${hash.slice(0, 10)}...${hash.slice(-6)}`);
       setMintAmount("");
+      // Refetch balances after mint
+      setTimeout(() => { refetchBalance(); refetchSupply(); }, 2000);
     } catch (e) {
       console.error(e);
       setTxMsg("Transaction failed. Check console.");
@@ -179,6 +193,8 @@ function BasketCard({ basketId }: { basketId: number }) {
       });
       setTxMsg(`Redeemed! Tx: ${hash.slice(0, 10)}...${hash.slice(-6)}`);
       setBurnAmount("");
+      // Refetch balances after burn
+      setTimeout(() => { refetchBalance(); refetchSupply(); }, 2000);
     } catch (e) {
       console.error(e);
       setTxMsg("Transaction failed. Check console.");
@@ -227,8 +243,10 @@ function BasketCard({ basketId }: { basketId: number }) {
         <span className="font-mono">{basketToken!.slice(0, 10)}...{basketToken!.slice(-6)}</span>
         <div className="flex gap-4">
           <span>Supply: {totalSupply ? (Number(totalSupply as bigint) / 1e18).toFixed(2) : "0"}</span>
-          {myBalanceNum > 0 && (
-            <span className="text-emerald-500">You: {myBalanceNum.toFixed(4)}</span>
+          {address && (
+            <span className={myBalanceNum > 0 ? "text-emerald-500" : "text-zinc-600"}>
+              You: {myBalanceNum.toFixed(4)}
+            </span>
           )}
         </div>
       </div>
@@ -271,6 +289,28 @@ function BasketCard({ basketId }: { basketId: number }) {
 
         {tab === "mint" && (
           <div className="space-y-3">
+            {/* User's stock token balances */}
+            {address && stockBalances && (
+              <div className="rounded-lg bg-white/[0.03] p-2.5 text-xs space-y-1">
+                <div className="text-zinc-500 mb-1">Your wallet balances:</div>
+                {stockEntries.map(([ticker], i) => {
+                  const bal = stockBalances[i]?.result as bigint | undefined;
+                  const balNum = bal ? Number(formatUnits(bal, 18)) : 0;
+                  const inBasket = compTokens.some(
+                    (t) => TICKER_BY_ADDR[t.toLowerCase()] === ticker
+                  );
+                  if (!inBasket) return null;
+                  return (
+                    <div key={ticker} className="flex justify-between text-zinc-300">
+                      <span>{ticker}</span>
+                      <span className={`font-mono ${balNum > 0 ? "text-emerald-400" : "text-zinc-600"}`}>
+                        {balNum.toFixed(4)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div>
               <label className="block text-xs text-zinc-400 mb-1">Basket tokens to mint</label>
               <input

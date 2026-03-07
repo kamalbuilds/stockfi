@@ -22,10 +22,10 @@ import "../src/GapInsurancePool.sol";
 contract Deploy is Script {
 
     // ─── Robinhood Chain Testnet (chain 46630) token addresses ───
-    // NOTE: Verify these against explorer before deploying.
-    // Source: arb-sponsor-scout SPONSOR-TECH.md
+    // NOTE: MockUSDC deployed at this address. Verify on explorer before re-deploying.
+    // If the official RH Chain USDC becomes available, update this address.
 
-    address constant USDC = 0xbf4479C07Dc6fdc6dAa764A0ccA06969e894275F;
+    address constant USDC = 0xb3485Da6BB50843a20F321653869556Dc1E2F3c2; // MockUSDC (deployed)
     address constant WETH = 0x33e4191705c386532ba27cBF171Db86919200B94;
     address constant TSLA = 0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E;
     address constant AMZN = 0x5884aD2f920c162CFBbACc88C9C51AA75eC09E02;
