@@ -1,4 +1,4 @@
-# StockFi — How Insurance Pool & Covered Calls Work
+# StockFi - How Insurance Pool & Covered Calls Work
 
 ---
 
@@ -24,7 +24,7 @@ HOW MONEY FLOWS IN:
 
   Trader ──── TSLA tokens ──────► StopLossVault  (holds your stock)
   Trader ──── $200 USDC   ──────► GapInsurancePool  (your 2% premium)
-                                        ▲
+                                      ▲
   LP 1 ──── $5,000 USDC ──────────────┤
   LP 2 ──── $3,000 USDC ──────────────┤  (their capital backs the guarantees)
   LP 3 ──── $2,000 USDC ──────────────┘
@@ -36,8 +36,8 @@ SCENARIO A: Price never hits your stop  (most common)
 
   TSLA stays above $270 ──► stop never triggers
 
-  Trader:  gets tokens back whenever they cancel ✅
-  LPs:     keep the $200 premium as pure profit ✅
+  Trader:  gets tokens back whenever they cancel 
+  LPs:     keep the $200 premium as pure profit 
            (did nothing, earned yield)
 ```
 
@@ -51,7 +51,7 @@ SCENARIO B: Price crashes through your stop
                          $270 stop triggers
                                │
                                ▼
-  GapInsurancePool ──── $270 USDC ────────────────► Trader ✅
+  GapInsurancePool ──── $270 USDC ────────────────► Trader 
                                                     (got guaranteed price)
 
   StopLossVault ──── TSLA tokens (worth $248) ────► Insurance Pool
@@ -130,8 +130,8 @@ OUTCOME A: TSLA never reaches $300  (expiry passes)
                                                         │
                                                    expiry hits
                                                         │
-  Writer: ◄──── gets 100 TSLA back ✅
-  Writer: already got $500 premium  ✅  (pure yield, free money)
+  Writer: ◄──── gets 100 TSLA back 
+  Writer: already got $500 premium    (pure yield, free money)
 
   Buyer:  lost $500 premium ❌
           (small loss, better than buying full position)
@@ -148,8 +148,8 @@ OUTCOME B: TSLA rockets to $350  (buyer exercises)
   CoveredCallVault ──── 100 TSLA ──────────► Buyer
   Buyer pays:      ──── $300 x 100 ─────────► Writer
 
-  Writer: sold at $300 ✅  (missed $350 upside, but got $500 premium too)
-  Buyer:  paid $300/token for stock worth $350 = +$50/token profit ✅
+  Writer: sold at $300   (missed $350 upside, but got $500 premium too)
+  Buyer:  paid $300/token for stock worth $350 = +$50/token profit 
           spent $500 premium, made $5,000 on the move = 10x return 🚀
 ```
 
