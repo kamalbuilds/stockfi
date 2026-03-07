@@ -1,7 +1,6 @@
 import { http, createConfig } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { defineChain } from "viem";
-import { arbitrumSepolia } from "viem/chains";
 
 export const robinhoodChainTestnet = defineChain({
   id: 46630,
@@ -19,14 +18,11 @@ export const robinhoodChainTestnet = defineChain({
   testnet: true,
 });
 
-export { arbitrumSepolia };
-
 export const config = createConfig({
-  chains: [robinhoodChainTestnet, arbitrumSepolia],
+  chains: [robinhoodChainTestnet],
   connectors: [injected()],
   transports: {
     [robinhoodChainTestnet.id]: http("https://rpc.testnet.chain.robinhood.com"),
-    [arbitrumSepolia.id]: http("https://sepolia-rollup.arbitrum.io/rpc"),
   },
   ssr: true,
 });
