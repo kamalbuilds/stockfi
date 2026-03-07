@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   VAULT_ADDRESS,
   ORACLES,
+  SUPPORTED_STOCKS,
   getStopLossStatusName,
   STOP_LOSS_STATUS_BG,
   distanceColor,
@@ -148,11 +149,14 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-lg font-semibold text-white mb-4">Live Prices</h2>
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-3">
-              {tickers.map((ticker) => (
-                <div key={ticker} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-zinc-300">{ticker}</span>
+              {SUPPORTED_STOCKS.map((stock) => (
+                <div key={stock.ticker} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <img src={stock.logo} alt={stock.name} className="h-5 w-5 rounded-full bg-white/10 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <span className="text-sm font-medium text-zinc-300">{stock.ticker}</span>
+                  </div>
                   <span className="text-sm font-mono text-emerald-400">
-                    {prices[ticker] ? `$${prices[ticker]}` : "—"}
+                    {prices[stock.ticker] ? `$${prices[stock.ticker]}` : "—"}
                   </span>
                 </div>
               ))}

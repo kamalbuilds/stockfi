@@ -12,11 +12,11 @@ import { robinhoodChainTestnet, arbitrumSepolia } from "@/config/wagmi";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/ai-advisor", label: "AI Advisor" },
+  { href: "/baskets", label: "Index Funds" },
   { href: "/create", label: "Stop-Loss" },
-  { href: "/private", label: "Private Stop" },
-  { href: "/fhe-privacy", label: "FHE Privacy" },
+  { href: "/basket", label: "Create Basket" },
   { href: "/options", label: "Options" },
-  { href: "/basket", label: "Baskets" },
   { href: "/insurance", label: "Insurance" },
   { href: "/analytics", label: "Analytics" },
 ];

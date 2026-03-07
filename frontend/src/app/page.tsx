@@ -8,6 +8,7 @@ import {
   INSURANCE_POOL_ADDRESS,
   BASKET_FACTORY_ADDRESS,
   ORACLES,
+  SUPPORTED_STOCKS,
 } from "@/config/contracts";
 import { STOP_LOSS_VAULT_ABI, GAP_INSURANCE_POOL_ABI, BASKET_FACTORY_ABI, PRICE_ORACLE_ABI } from "@/config/abi";
 
@@ -224,22 +225,31 @@ export default function Home() {
 
       {/* Supported Stocks with Live Prices */}
       <section className="mx-auto max-w-5xl px-4 pb-24">
-        <h2 className="mb-8 text-center text-2xl font-bold">Live Stock Prices</h2>
+        <h2 className="mb-8 text-center text-2xl font-bold">Live Oracle Prices</h2>
         <div className="flex flex-wrap justify-center gap-3">
-          {["TSLA", "AMZN", "PLTR", "NFLX", "AMD"].map((ticker) => (
+          {SUPPORTED_STOCKS.map((stock) => (
             <div
-              key={ticker}
-              className="rounded-lg border border-white/10 bg-white/5 px-6 py-3 flex items-center gap-3"
+              key={stock.ticker}
+              className="rounded-lg border border-white/10 bg-white/5 px-6 py-4 flex items-center gap-4 min-w-[160px]"
             >
-              <span className="text-sm font-semibold text-white">{ticker}</span>
-              <span className="text-sm font-mono text-emerald-400">
-                {prices[ticker] ? `$${prices[ticker]}` : "..."}
-              </span>
+              <img
+                src={stock.logo}
+                alt={stock.name}
+                className="h-8 w-8 rounded-full bg-white/10 object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div>
+                <div className="text-sm font-semibold text-white">{stock.ticker}</div>
+                <div className="text-lg font-mono text-emerald-400">
+                  {prices[stock.ticker] ? `$${prices[stock.ticker]}` : "..."}
+                </div>
+                <div className="text-xs text-zinc-500">{stock.name}</div>
+              </div>
             </div>
           ))}
         </div>
         <p className="mt-4 text-center text-sm text-zinc-500">
-          Real-time prices via Yahoo Finance, pushed to on-chain oracles every 30s
+          Prices update every 10s from on-chain oracles (Yahoo Finance feed)
         </p>
       </section>
     </div>

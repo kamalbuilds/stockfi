@@ -67,11 +67,11 @@ export const STOP_LOSS_STATUS_BG: Record<string, string> = {
 
 // ─── Supported stocks ───────────────────────────────────────────────────────
 export const SUPPORTED_STOCKS = [
-  { ticker: "TSLA", name: "Tesla",    color: "#E31937" },
-  { ticker: "AMZN", name: "Amazon",   color: "#FF9900" },
-  { ticker: "PLTR", name: "Palantir", color: "#8B5CF6" },
-  { ticker: "NFLX", name: "Netflix",  color: "#E50914" },
-  { ticker: "AMD",  name: "AMD",      color: "#ED1C24" },
+  { ticker: "TSLA", name: "Tesla",    color: "#E31937", logo: "https://logo.clearbit.com/tesla.com" },
+  { ticker: "AMZN", name: "Amazon",   color: "#FF9900", logo: "https://logo.clearbit.com/amazon.com" },
+  { ticker: "PLTR", name: "Palantir", color: "#8B5CF6", logo: "https://logo.clearbit.com/palantir.com" },
+  { ticker: "NFLX", name: "Netflix",  color: "#E50914", logo: "https://logo.clearbit.com/netflix.com" },
+  { ticker: "AMD",  name: "AMD",      color: "#ED1C24", logo: "https://logo.clearbit.com/amd.com" },
 ];
 
 // Distance-to-stop color coding
