@@ -6,7 +6,7 @@ Create stock indexes in one transaction. Protect them with insurance-backed stop
 
 Built for [Arbitrum Open House NYC](https://lu.ma/arbitrum-open-house-nyc) on Robinhood Chain (Arbitrum Orbit L3, chain 46630).
 
-**[Live Demo](https://stockforge-iota.vercel.app)** | **[GitHub](https://github.com/kamalbuilds/stockfi)** | **[Explorer](https://explorer.testnet.chain.robinhood.com)**
+**[Live Demo](https://stockfi.vercel.app)** | **[GitHub](https://github.com/kamalbuilds/stockfi)** | **[Explorer](https://explorer.testnet.chain.robinhood.com)**
 
 ## The Problem
 
