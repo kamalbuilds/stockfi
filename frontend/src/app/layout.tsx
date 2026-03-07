@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StockForge - Gap-Proof Stop-Loss on Robinhood Chain",
+  title: "StockFi - Gap-Proof Stop-Loss on Robinhood Chain",
   description:
-    "Your stop-loss at $270 fills at $250 after a gap. On StockForge, you get exactly $270. Guaranteed. Only possible because DeFi never closes.",
+    "Your stop-loss at $270 fills at $250 after a gap. On StockFi, you get exactly $270. Guaranteed. Only possible because DeFi never closes.",
   openGraph: {
-    title: "StockForge - Gap-Proof Stop-Loss",
+    title: "StockFi - Gap-Proof Stop-Loss",
     description: "Guaranteed stop-loss execution for tokenized stocks. Powered by Robinhood Chain.",
     type: "website",
   },

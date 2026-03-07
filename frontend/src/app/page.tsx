@@ -151,7 +151,7 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* StockForge */}
+          {/* StockFi */}
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-8">
             <div className="mb-4 flex items-center gap-3">
               <div className="rounded-lg bg-emerald-500/20 p-2">
@@ -159,7 +159,7 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-emerald-400">StockForge Stop-Loss</h3>
+              <h3 className="text-lg font-semibold text-emerald-400">StockFi Stop-Loss</h3>
             </div>
             <ul className="space-y-3 text-zinc-400 text-sm">
               <li className="flex gap-2">

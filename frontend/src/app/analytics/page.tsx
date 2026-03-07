@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Protocol Analytics</h1>
-          <p className="text-zinc-400 mt-1">Real-time on-chain data from StockForge contracts</p>
+          <p className="text-zinc-400 mt-1">Real-time on-chain data from StockFi contracts</p>
         </div>
 
         {/* Key Metrics Grid */}

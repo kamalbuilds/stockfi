@@ -5,7 +5,7 @@ import {IAggregatorV3} from "./interfaces/IAggregatorV3.sol";
 
 /// @title PriceOracle
 /// @notice Chainlink AggregatorV3-compatible price feed for Robinhood Chain stock tokens.
-///         Updated by the StockForge price bot every 30 seconds.
+///         Updated by the StockFi price bot every 30 seconds.
 contract PriceOracle is IAggregatorV3 {
     // ═══════════════════════════════════════════════════════════════
     // STATE

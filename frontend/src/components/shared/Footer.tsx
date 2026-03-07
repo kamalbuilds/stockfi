@@ -20,7 +20,7 @@ export function Footer() {
                 <polyline points="16 7 22 7 22 13" />
               </svg>
             </div>
-            <span className="text-sm text-zinc-500">StockForge - Gap-Proof Stop-Loss</span>
+            <span className="text-sm text-zinc-500">StockFi - Gap-Proof Stop-Loss</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-zinc-600">
             <span>Robinhood Chain Testnet (46630)</span>

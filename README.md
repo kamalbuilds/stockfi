@@ -1,4 +1,4 @@
-# StockForge: The DeFi Composability Layer for Tokenized Stocks
+# StockFi: The DeFi Composability Layer for Tokenized Stocks
 
 **Six composable financial primitives for tokenized equities. Baskets, insurance, options, privacy. All permissionless. All on Robinhood Chain.**
 
@@ -16,13 +16,13 @@ Robinhood Chain has tokenized stocks (TSLA, AMZN, PLTR, NFLX, AMD) as ERC-20s, b
 
 ## The Solution
 
-StockForge is the DeFi composability layer for tokenized stocks. Six primitives that compose together:
+StockFi is the DeFi composability layer for tokenized stocks. Six primitives that compose together:
 
 **1. Permissionless Stock Baskets (EIP-7621 inspired)**
-Create custom stock indexes in one transaction. `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`. In TradFi, creating an ETF costs $250K+ and requires SEC approval. On StockForge: one click.
+Create custom stock indexes in one transaction. `KTECH = 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD`. In TradFi, creating an ETF costs $250K+ and requires SEC approval. On StockFi: one click.
 
 **2. Insurance-Backed Stop-Losses**
-Pay a 2% premium, get a price-guaranteed exit. A pre-funded pool absorbs gaps. Unlike dYdX/GMX stop-losses that execute at market price, StockForge pays your stop price (minus a 0.5% execution fee).
+Pay a 2% premium, get a price-guaranteed exit. A pre-funded pool absorbs gaps. Unlike dYdX/GMX stop-losses that execute at market price, StockFi pays your stop price (minus a 0.5% execution fee).
 
 **3. Covered Call Options**
 First permissionless covered call market for tokenized stocks. Writers deposit stock tokens and earn premium yield. Buyers get leveraged upside exposure. In TradFi, this requires options approval and a broker. Here: one transaction.
@@ -190,7 +190,7 @@ Execute AMZN tx: [`0x6a65b064...`](https://explorer.testnet.chain.robinhood.com/
 
 ## Key Innovation
 
-StockForge is not an app. It's the **financial infrastructure layer** for tokenized stock DeFi. Seven composable primitives across two chains:
+StockFi is not an app. It's the **financial infrastructure layer** for tokenized stock DeFi. Seven composable primitives across two chains:
 
 | Primitive | What It Does | TradFi Equivalent | Why It's Better |
 |-----------|-------------|-------------------|-----------------|
@@ -221,7 +221,7 @@ Five transactions. Complete financial infrastructure across two chains. Only pos
 A: Same economic outcome (guaranteed floor price), but simpler UX (one click, no expiry, no strike selection), and permissionless underwriting (anyone can be an LP, not just institutions).
 
 **Q: How is this different from dYdX/GMX stop-losses?**
-A: Those trade synthetic perps. StockForge protects actual tokenized stock tokens (TSLA ERC-20s on RH Chain) with a pre-funded insurance pool that absorbs price impact.
+A: Those trade synthetic perps. StockFi protects actual tokenized stock tokens (TSLA ERC-20s on RH Chain) with a pre-funded insurance pool that absorbs price impact.
 
 **Q: What if the pool runs out?**
 A: The pool has an 80% utilization cap. New stop-losses are rejected when the pool is over-utilized. LPs always see pool health metrics on the insurance page.

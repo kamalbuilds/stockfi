@@ -14,7 +14,7 @@ import {IAggregatorV3} from "./interfaces/IAggregatorV3.sol";
 ///
 ///         This creates a yield source for stock token holders: earn premiums by
 ///         selling upside exposure. Combined with StopLossVault's downside protection,
-///         StockForge provides complete risk management for tokenized equities.
+///         StockFi provides complete risk management for tokenized equities.
 ///
 ///         Why this matters:
 ///         - Covered calls require a brokerage account + options approval in TradFi

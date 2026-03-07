@@ -1,5 +1,5 @@
 /**
- * StockForge Price Bot
+ * StockFi Price Bot
  * - Fetches real stock prices via Yahoo Finance (unofficial JSON endpoint)
  * - Pushes prices to PriceOracle contracts every 30 seconds
  * - Monitors active stop-loss positions and executes when triggered
@@ -440,7 +440,7 @@ function listenForPrivatePositions() {
 // ─── Main loop ───────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("=== StockForge Price Bot ===");
+  console.log("=== StockFi Price Bot ===");
   console.log(`RPC: ${RPC_URL}`);
 
   provider = new ethers.JsonRpcProvider(RPC_URL);

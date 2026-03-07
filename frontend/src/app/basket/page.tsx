@@ -619,7 +619,7 @@ export default function BasketPage() {
               </div>
               <div className="mt-4 pt-3 border-t border-white/5 text-xs text-zinc-600">
                 In TradFi, creating an ETF requires $250K+ in legal fees and SEC approval.
-                On StockForge: one transaction.
+                On StockFi: one transaction.
               </div>
             </div>
           </div>

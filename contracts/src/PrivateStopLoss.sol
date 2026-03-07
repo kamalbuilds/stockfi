@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {IAggregatorV3} from "./interfaces/IAggregatorV3.sol";
 
 /// @title PrivateStopLoss
-/// @notice Commit-reveal privacy layer for StockForge stop-losses.
+/// @notice Commit-reveal privacy layer for StockFi stop-losses.
 ///
 ///         Problem: On-chain stop-loss prices are visible to everyone. Front-runners
 ///         and MEV bots can see your stop price, manipulate the oracle, trigger your

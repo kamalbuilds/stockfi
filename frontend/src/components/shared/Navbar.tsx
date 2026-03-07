@@ -74,7 +74,7 @@ export function Navbar() {
                 <polyline points="16 7 22 7 22 13" />
               </svg>
             </div>
-            <span className="text-lg font-bold text-white">StockForge</span>
+            <span className="text-lg font-bold text-white">StockFi</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">

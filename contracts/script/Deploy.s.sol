@@ -6,7 +6,7 @@ import "../src/PriceOracle.sol";
 import "../src/StopLossVault.sol";
 import "../src/GapInsurancePool.sol";
 
-/// @notice Deploy all StockForge contracts to Robinhood Chain testnet (chain 46630)
+/// @notice Deploy all StockFi contracts to Robinhood Chain testnet (chain 46630)
 ///
 /// Usage:
 ///   forge script script/Deploy.s.sol \
@@ -45,7 +45,7 @@ contract Deploy is Script {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
 
-        console.log("=== StockForge Deployment ===");
+        console.log("=== StockFi Deployment ===");
         console.log("Deployer:", deployer);
         console.log("Chain:", block.chainid);
 

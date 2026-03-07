@@ -17,7 +17,7 @@ contract Redeploy is Script {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
 
-        console.log("=== StockForge Redeploy (MockUSDC) ===");
+        console.log("=== StockFi Redeploy (MockUSDC) ===");
         console.log("Deployer:", deployer);
 
         vm.startBroadcast(deployerKey);
