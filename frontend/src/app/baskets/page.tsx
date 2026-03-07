@@ -361,7 +361,7 @@ function BasketShowcaseCard({
           </span>
         </div>
         <Link
-          href="/create"
+          href="/protect-basket"
           className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all ${accent.bg} ${accent.text} ${accent.border} border hover:opacity-80`}
         >
           <svg

@@ -14,6 +14,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/ai-advisor", label: "AI Advisor" },
   { href: "/baskets", label: "Index Funds" },
+  { href: "/rebalance", label: "Rebalancer" },
   { href: "/create", label: "Stop-Loss" },
   { href: "/basket", label: "Create Basket" },
   { href: "/options", label: "Options" },
