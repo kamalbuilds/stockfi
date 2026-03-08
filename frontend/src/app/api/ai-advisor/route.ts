@@ -3,7 +3,7 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY || "",
+  apiKey: process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || "",
 });
 
 const SYSTEM_PROMPT = `You are StockFi AI Advisor, an expert stock portfolio advisor for the StockFi protocol on Robinhood Chain.
