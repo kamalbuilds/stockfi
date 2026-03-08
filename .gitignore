@@ -8,3 +8,4 @@ progress/
 .vercel
 .env*.local
 bot/commit-registry.json
+contracts/lib
