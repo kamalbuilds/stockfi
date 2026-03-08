@@ -10,89 +10,6 @@ In TradFi, a stop-loss at $270 fills at $250 when markets gap overnight. You los
 
 ---
 
-## Architecture
-
-```
-                                    ┌─────────────────────────────────────────┐
-                                    │          ROBINHOOD CHAIN (L3)           │
-                                    │         Arbitrum Orbit · 46630          │
-                                    └─────────────────────────────────────────┘
-
-    ┌──────────────┐       ┌─────────────────────────────────────────────────────────────-─┐
-    │  Yahoo       │       │                                                               │
-    │  Finance     │       │   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    │
-    │  (Real       │ 30s   │   │ TSLA Oracle  │    │ AMZN Oracle  │    │ PLTR Oracle  │    │
-    │  Stock       │──────>│   │  $273.45     │    │  $214.92     │    │  $109.51     │    │
-    │  Prices)     │       │   └──────┬───────┘    └──────┬───────┘    └──────┬───────┘    │
-    └──────────────┘       │          │                   │                   │            │
-                           │          └────────────┬──────┘────────────┬──────┘            │
-    ┌──────────────┐       │                       │                    │                  │
-    │  AI Stock    │       │                       ▼                    ▼                  │
-    │  Advisor     │       │   ┌─────────────────────────────────────────────────────┐     │
-    │  (OpenRouter │       │   │              StopLossVault                          │     │
-    │  + Gemini)   │       │   │                                                     │     │
-    └──────────────┘       │   │  User deposits TSLA ──► Vault holds tokens          │     │
-                           │   │  Sets stop at $270  ──► Guaranteed exit price       │     │
-                           │   │  Pays 2% premium   ──► Premium to insurance pool    │     │
-                           │   │                                                     │     │
-                           │   │  price <= stopPrice? ──► Execute! ──┐               │     │
-                           │   └─────────────────────────────────────┼───────────────┘     │
-                           │                                         │                     │
-                           │              ┌──────────────────────────┼─────────-┐           │
-                           │              │                          ▼          │           │
-                           │              │                  GapInsurancePool   │           │
-                           │              │                                     │           │
-                           │              │  ┌─────────┐    ┌──────────────-┐   │           │
-                           │              │  │  LPs    │    │  On Execute:  │   │           │
-                           │              │  │ Deposit │    │               │   │           │
-                           │              │  │  USDC   │    │ USDC ──► User │   │           │
-                           │              │  │         │    │ (guaranteed   │   │           │
-                           │              │  │ Earn 2% │    │  stop price)  │   │           │
-                           │              │  │ premium │    │               │   │           │
-                           │              │  │  yield  │    │ Stock ──► Pool│   │           │
-                           │              │  └─────────┘    │ (buy the dip) │   │           │
-                           │              │                 └─────-─────────┘   │           │
-                           │              └────────────────────────────────────-┘           │
-                           │                                                                │
-                           │   ┌───────────────────┐  ┌───────────────────┐                 │
-                           │   │  BasketFactory    │  │ PrivateStopLoss   │                 │
-                           │   │                   │  │                   │                 │
-                           │   │ KTECH = 40% TSLA  │  │ 1. Commit hash    │                 │
-                           │   │   + 30% AMZN      │  │    (price hidden) │                 │
-                           │   │   + 20% PLTR      │  │ 2. Reveal price   │                 │
-                           │   │   + 10% AMD       │  │ 3. Execute        │                 │
-                           │   │                   │  │                   │                 │
-                           │   │ Mint ERC-20 basket│  │ Anti-MEV          │                 │
-                           │   │ token in 1 tx     │  │ Anti-front-run    │                 │
-                           │   └───────────────────┘  └───────────────────┘                 │
-                           │                                                                │
-                           │   ┌───────────────────┐  ┌───────────────────┐                 │
-                           │   │ CoveredCallVault  │  │ BasketPriceOracle │                 │
-                           │   │                   │  │                   │                 │
-                           │   │ Deposit TSLA      │  │ Aggregates stock  │                 │ 
-                           │   │ Set strike + exp  │  │ oracles into      │               │
-                           │   │ Earn premium      │  │ basket NAV        │               │
-                           │   │ Buyer gets upside │  │                   │               │
-                           │   │                   │  │ Portfolio-level   │               │
-                           │   │ First permissioned│  │ stop-losses on    │               │
-                           │   │ -less calls for   │  │ entire baskets    │               │
-                           │   │ tokenized stocks  │  │                   │               │
-                           │   └───────────────────┘  └─────────────────-─┘               │
-                           │                                                              │
-                           └──────────────────────────────────────────────────────────────┘
-
-                           ┌──────────────────────────────────────────────────────────────┐
-                           │                      PRICE BOT                               │
-                           │                                                              │
-                           │  Every 30 seconds:                                           │
-                           │  1. Fetch TSLA, AMZN, PLTR, NFLX, AMD from Yahoo Finance     │
-                           │  2. Push prices to on-chain PriceOracle contracts            │
-                           │  3. Check shouldTrigger() for all active stop-losses         │
-                           │  4. Execute triggered positions automatically                │
-                           │                                                              │
-                           └──────────────────────────────────────────────────────────────┘
-```
-
 ## The Gap Problem
 
 ```
@@ -198,6 +115,89 @@ All contracts deployed and verified on **Robinhood Chain Testnet** (Arbitrum Orb
 | **KTECH** | 40% TSLA + 30% AMZN + 20% PLTR + 10% AMD | [`0x97aB...1096`](https://explorer.testnet.chain.robinhood.com/address/0x97aB4e62f418e5F309e58aF3E8aD90a5d93E1096) |
 | **STREAMING** | 50% NFLX + 25% AMZN + 15% TSLA + 10% PLTR | [`0xCa5D...dBD0`](https://explorer.testnet.chain.robinhood.com/address/0xCa5D7e6b1A42c6E935f63C28859C4D0c6b42dBD0) |
 | **CHIPS&AI** | 40% AMD + 35% PLTR + 15% TSLA + 10% AMZN | [`0x9F65...a428`](https://explorer.testnet.chain.robinhood.com/address/0x9F65a1C8b9e5F3D2c4A7B6E8d0F2a3C5b7D9a428) |
+
+## Architecture
+
+```
+                                    ┌─────────────────────────────────────────┐
+                                    │          ROBINHOOD CHAIN (L3)           │
+                                    │         Arbitrum Orbit · 46630          │
+                                    └─────────────────────────────────────────┘
+
+    ┌──────────────┐       ┌─────────────────────────────────────────────────────────────--─┐
+    │  Yahoo       │       │                                                                │
+    │  Finance     │       │   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
+    │  (Real       │ 30s   │   │ TSLA Oracle  │    │ AMZN Oracle  │    │ PLTR Oracle  │     │
+    │  Stock       │──────>│   │  $273.45     │    │  $214.92     │    │  $109.51     │     │
+    │  Prices)     │       │   └──────┬───────┘    └──────┬───────┘    └──────┬───────┘     │
+    └──────────────┘       │          │                   │                   │             │
+                           │          └────────────┬──────┘────────────┬──────┘             │
+    ┌──────────────┐       │                       │                    │                   │
+    │  AI Stock    │       │                       ▼                    ▼                   │
+    │  Advisor     │       │   ┌─────────────────────────────────────────────────────┐      │
+    │  (OpenRouter │       │   │              StopLossVault                          │      │
+    │  + Gemini)   │       │   │                                                     │      │
+    └──────────────┘       │   │  User deposits TSLA ──► Vault holds tokens          │      │
+                           │   │  Sets stop at $270  ──► Guaranteed exit price       │      │
+                           │   │  Pays 2% premium   ──► Premium to insurance pool    │      │
+                           │   │                                                     │      │
+                           │   │  price <= stopPrice? ──► Execute! ──┐               │      │
+                           │   └─────────────────────────────────────┼───────────────┘      │
+                           │                                         │                      │
+                           │              ┌──────────────────────────┼─────────-┐           │
+                           │              │                          ▼          │           │
+                           │              │                  GapInsurancePool   │           │
+                           │              │                                     │           │
+                           │              │  ┌─────────┐    ┌──────────────-┐   │           │
+                           │              │  │  LPs    │    │  On Execute:  │   │           │
+                           │              │  │ Deposit │    │               │   │           │
+                           │              │  │  USDC   │    │ USDC ──► User │   │           │
+                           │              │  │         │    │ (guaranteed   │   │           │
+                           │              │  │ Earn 2% │    │  stop price)  │   │           │
+                           │              │  │ premium │    │               │   │           │
+                           │              │  │  yield  │    │ Stock ──► Pool│   │           │
+                           │              │  └─────────┘    │ (buy the dip) │   │           │
+                           │              │                 └─────-─────────┘   │           │
+                           │              └────────────────────────────────────-┘           │
+                           │                                                                │
+                           │   ┌───────────────────┐  ┌───────────────────┐                 │
+                           │   │  BasketFactory    │  │ PrivateStopLoss   │                 │
+                           │   │                   │  │                   │                 │
+                           │   │ KTECH = 40% TSLA  │  │ 1. Commit hash    │                 │
+                           │   │   + 30% AMZN      │  │    (price hidden) │                 │
+                           │   │   + 20% PLTR      │  │ 2. Reveal price   │                 │
+                           │   │   + 10% AMD       │  │ 3. Execute        │                 │
+                           │   │                   │  │                   │                 │
+                           │   │ Mint ERC-20 basket│  │ Anti-MEV          │                 │
+                           │   │ token in 1 tx     │  │ Anti-front-run    │                 │
+                           │   └───────────────────┘  └───────────────────┘                 │
+                           │                                                                │
+                           │   ┌───────────────────┐  ┌───────────────────┐                 │
+                           │   │ CoveredCallVault  │  │ BasketPriceOracle │                 │
+                           │   │                   │  │                   │                 │
+                           │   │ Deposit TSLA      │  │ Aggregates stock  │                 │ 
+                           │   │ Set strike + exp  │  │ oracles into      │                 │
+                           │   │ Earn premium      │  │ basket NAV        │                 │
+                           │   │ Buyer gets upside │  │                   │                 │
+                           │   │                   │  │ Portfolio-level   │                 │
+                           │   │ First permissioned│  │ stop-losses on    │                 │
+                           │   │ -less calls for   │  │ entire baskets    │                 │
+                           │   │ tokenized stocks  │  │                   │                 │
+                           │   └───────────────────┘  └─────────────────-─┘                 │
+                           │                                                                │
+                           └──────────────────────────────────────────────────────────────-─┘
+
+                           ┌──────────────────────────────────────────────────────────────┐
+                           │                      PRICE BOT                               │
+                           │                                                              │
+                           │  Every 30 seconds:                                           │
+                           │  1. Fetch TSLA, AMZN, PLTR, NFLX, AMD from Yahoo Finance     │
+                           │  2. Push prices to on-chain PriceOracle contracts            │
+                           │  3. Check shouldTrigger() for all active stop-losses         │
+                           │  4. Execute triggered positions automatically                │
+                           │                                                              │
+                           └──────────────────────────────────────────────────────────────┘
+```
 
 ## Tech Stack
 
